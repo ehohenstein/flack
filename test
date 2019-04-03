@@ -1,0 +1,15 @@
+#!/bin/bash
+
+function test_python {
+    TEST=$1
+    echo $TEST
+    python -u $TEST
+}
+
+TEST_DIRS=client
+
+for dir in $TEST_DIRS; do
+    for file in $(find $dir -name \*_test.py -print); do
+        test_python $file
+    done
+done
