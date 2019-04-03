@@ -11,6 +11,7 @@ class FakeWebSocket(object):
         self.onMessage = None
         self.onError = None
         self.onClose = None
+        self.running = False
 
     def WebSocketApp(self, url, on_open, on_message, on_error, on_close):
         self.url = url
@@ -19,19 +20,22 @@ class FakeWebSocket(object):
         self.onClose = on_close
         return self
 
+    def run_forever(self):
+        self.running = True
+
 class ClientTests(unittest.TestCase):
     def setUp(self):
         self.url = 'ws://foobar:4242/some/path'
         self.ws = FakeWebSocket()
-        self.continuing = False
-
-    def should_continue(self):
-        return self.continuing
+        self.client = client.Client(url=self.url, ws=self.ws)
 
     def test_client_connects_to_server(self):
-        c = client.Client(url=self.url, ws=self.ws, should_continue=self.should_continue)
-        c.run()
+        self.client.run()
         self.assertEqual(self.url, self.ws.url)
+
+    def test_client_runs_forever(self):
+        self.client.run()
+        self.assertTrue(self.ws.running)
 
 unittest.main()
 

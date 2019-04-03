@@ -4,16 +4,14 @@ from optparse import OptionParser
 import websocket
 
 class Client(object):
-    def __init__(self, url, ws=websocket, should_continue=lambda: True):
+    def __init__(self, url, ws=websocket):
         self.conn = None
         self.url = url
         self.ws = ws
-        self.should_continue = should_continue
 
     def run(self):
         self.conn = self.ws.WebSocketApp(self.url, self.onOpen, self.onMessage, self.onError, self.onClose)
-        while self.should_continue():
-            pass
+        self.conn.run_forever()
 
     def close(self):
         if self.conn:
