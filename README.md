@@ -49,7 +49,7 @@ The `protocol_version` field must contain the value "1.0". The `user_name` field
 
 The `protocol_version` field must contain the value "1.0". The `user_id` field will be a non-emtpy ascii string that the server has chosen to identify this connection.
 
-```
+```javascript
 {
     "record": "server_hello",
     "protocol_version": "1.0",
@@ -61,7 +61,7 @@ The `protocol_version` field must contain the value "1.0". The `user_id` field w
 
 The `code` field will contain an ascii error code associated with the specific error detected by the server which the client may use to interpret the reason for the error and present a user-friendly error explanation. The `reason` field will contain an ascii English explanation of the error which is intended for debugging.
 
-```
+```javascript
 {
     "record": "protocol_error",
     "code": string,
@@ -86,7 +86,7 @@ The `chat_name` field will be the name of a chat that the client has joined. The
 
 Clients should store the association between `user_name` and `user_id` since all subsequent messages associated with the chat will only contain `user_id` to identify the user associated with the message.
 
-```
+```javascript
 {
     "record": "joined",
     "chat_name": string,
@@ -101,7 +101,7 @@ Clients should store the association between `user_name` and `user_id` since all
 
 The `chat_name` field will be the name of a chat that the client has joined. The `user_id` field uniquely identifies the user that sent the message. The `mime_type` field indicates the type of content contained in the `message` field which must be "text/plain". The `message` field must contain a utf-8 string. The `timestamp` field will be an ISO 8601 formatted string identifying the UTC time when the message was received by the serer. The `sequence` field will be an integer that the client can use to impose a strict ordering on chat stream events should the client receive messages out of order. The `user_id`, `timestamp`, and `sequence` fields should be ommitted by the client when sending a `chat_message` message to the server but are required in `chat_message` messages sent by the server to clients.
 
-```
+```javascript
 {
     "record": "chat_message",
     "chat_name": string,
@@ -117,7 +117,7 @@ The `chat_name` field will be the name of a chat that the client has joined. The
 
 The `chat_name` field will be the name of a chat that the client has joined.
 
-```
+```javascript
 {
     "record": "leave_chat",
     "chat_name": string
@@ -128,7 +128,7 @@ The `chat_name` field will be the name of a chat that the client has joined.
 
 The `chat_name` field will be the name of a chat that the client has joined. The `user_id` field will be a non-empty ascii string uniquely identying the user that left the chat. The `timestamp` field will be an ISO 8601 formatted string identifying the UTC time when the user left the chat. The `sequence` field will be an integer that the client can use to impose a strict ordering on chat stream events should the client receive messages out of order.
 
-```
+```javascript
 {
     "record": "left",
     "chat_name": string,
@@ -140,7 +140,7 @@ The `chat_name` field will be the name of a chat that the client has joined. The
 
 ##### `ping`
 
-```
+```javascript
 {
     "record": "ping"
 }
@@ -148,7 +148,7 @@ The `chat_name` field will be the name of a chat that the client has joined. The
 
 ##### `ping_reply`
 
-```
+```javascript
 {
     "record": "ping_reply"
 }
@@ -156,7 +156,7 @@ The `chat_name` field will be the name of a chat that the client has joined. The
 
 ##### `client_goodbye`
 
-```
+```javascript
 {
     "record": "client_goodbye"
 }
@@ -164,7 +164,7 @@ The `chat_name` field will be the name of a chat that the client has joined. The
 
 ##### `server_goodbye`
 
-```
+```javascript
 {
     "record": "server_goodbye"
 }
