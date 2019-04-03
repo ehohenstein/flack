@@ -3,7 +3,7 @@
 function test_python {
     TEST=$1
     echo $TEST
-    python -u $TEST
+    python3 -u $TEST
 }
 
 TEST_DIRS=client
