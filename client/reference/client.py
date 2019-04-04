@@ -1,22 +1,29 @@
 #!/usr/bin/python3
 
+import datetime
 import json
 import optparse
+import time
 import websocket
 
 class Client(object):
-    def __init__(self, url, username, chat, timeout, ws=websocket):
+    def __init__(self, url, username, chat, number, delay, ws=websocket, tm=time):
         self.conn = None
         self.url = url
         self.username = username
         self.chat = chat
+        self.number = number
+        self.delay = delay
+
         self.ws = ws
-        self.timeout = timeout
+        self.tm = tm
+
         self.user_id = None
         self.chat_users = None
 
         self.server_hello = False
         self.has_joined = False
+        self.has_left = False
 
         self.messageDispatch = {
             'protocol_error': self.protocolError,
@@ -117,24 +124,80 @@ class Client(object):
                 self.conn.close()
                 return
             self.has_joined = True
+        self.chat_users[message['user_id']] = message['user_name']
         chat_message = {'record': 'chat_message', 'chat_name': self.chat, 'mime_type': 'text/plain', 'message': 'I like cats'}
         self.conn.send(json.dumps(chat_message))
 
     def chatMessage(self, message):
-        pass
+        if not self.validate({'record': 'chat_message', 'chat_name': self.chat, 'user_id': str, 'mime_type': 'text/plain', 'message': str, 'timestamp': datetime.datetime, 'sequence': int}, message):
+            self.conn.close()
+            return
+        if self.chat_users == None:
+            print("received chat_message before chat_state: {0}".format(message))
+            self.conn.close()
+            return
+        if message['user_id'] not in self.chat_users:
+            print("received chat_message from user {0} not in the chat: {1}".format(message['user_id'], message))
+            self.conn.close()
+            return
+        utc = datetime.datetime.strptime(message['timestamp'], "%Y-%m-%dT%H:%M:%SZ")
+        local = self.utc2local(utc)
+        print("{0}: ({1}) {2}".format(self.chat_users[message['user_id']], datetime.datetime.strftime(local, "%H:%M"), message['message']))
+        if message['user_id'] == self.user_id:
+            self.number -= 1
+            if self.number <= 1:
+                leave = {'record': 'leave_chat', 'chat_name': self.chat}
+                self.conn.send(json.dumps(leave))
+                self.has_left = True
+            else:
+                ping = {'record': 'ping'}
+                self.conn.send(json.dumps(ping))
 
     def left(self, message):
-        pass
+        if not self.validate({'record': 'left', 'chat_name': self.chat, 'user_id': str, 'timestamp': datetime.datetime, 'sequence': int}, message):
+            self.conn.close()
+            return
+        if self.chat_users == None:
+            print("received left message before chat_state: {0}".format(message))
+            self.conn.close()
+            return
+        if message['user_id'] not in self.chat_users:
+            print("received left message for user not in chat: {0}".format(message))
+            self.conn.close()
+            return
+        del self.chat_users[message['user_id']]
+        if message['user_id'] == self.user_id:
+            if not self.has_left:
+                print("received left message for self without sending leave_chat message: {0}".format(message))
+                self.conn.close()
+                return
+            goodbye = {'record': 'client_goodbye'}
+            self.conn.send(json.dumps(goodbye))
 
     def pingReply(self, message):
-        pass
+        if not self.validate({'record': 'ping_reply'}, message):
+            self.conn.close()
+            return
+        if self.chat_users == None:
+            print("received ping_reply before chat_state message")
+            self.conn.close()
+            return
+        if self.user_id not in self.chat_users:
+            print("received ping_reply before joinging chat")
+            self.conn.close()
+            return
+        self.tm.sleep(self.delay)
+        chat_message = {'record': 'chat_message', 'chat_name': self.chat, 'mime_type': 'text/plain', 'message': 'I like cats'}
+        self.conn.send(json.dumps(chat_message))
 
     def serverGoodbye(self, message):
-        pass
+        self.validate({'record': 'server_goodbye'}, message)
+        print("received server_goodbye, closing connection")
+        self.conn.close()
 
     def validate(self, fields, message):
         if sorted(fields.keys()) != sorted(message.keys()):
-            print('invalid {0} record received from server: {0}'.format(message['record'], message))
+            print('invalid {0} record received from server: {1}'.format(message['record'], message))
             return False
         for key in fields:
             value = message[key]
@@ -145,6 +208,12 @@ class Client(object):
                 for item in value:
                     if not self.validate(fields[key][0], item):
                         return False
+            elif fields[key] == datetime.datetime:
+                try:
+                    datetime.datetime.strptime(value, "%Y-%m-%dT%H:%M:%SZ")
+                except ValueError:
+                    print('field {0} of {1} record is not a valid ISO-8601 datetime: {2}'.format(key, message['record'], message))
+                    return False
             elif type(fields[key]) == type:
                 if type(value) != fields[key]:
                     print('field {0} of {1} record does not have the expected type: {2}'.format(key, message['record'], message))
@@ -157,11 +226,18 @@ class Client(object):
                 return False
         return True
 
+    def utc2local(self, utc):
+        epoch = time.mktime(utc.timetuple())
+        offset = datetime.datetime.fromtimestamp(epoch) - datetime.datetime.utcfromtimestamp(epoch)
+        return utc + offset
+
 def main(args):
     parser = optparse.OptionParser(usage="usage: %prog --server=<server> --port=<port>")
     parser.add_option("-u", "--url", dest="url", help="url to use to connect to server")
     parser.add_option("-n", "--name", dest="username", default="hoser", help="username for (fake) authentication")
     parser.add_option("-c", "--chat", dest="chat", default="foobar", help="chat name")
+    parser.add_option("-n", "--number", dest="number", type="int", default=100, help="number of messages to send before exiting")
+    parser.add_option("-d", "--delay", dest="delay", type="int", default=1000, help="number of milliseconds to wait between messages")
     options, extra = parser.parse_args(args)
 
     if extra[1:]:
@@ -174,7 +250,7 @@ def main(args):
         parser.print_help()
         return 1
 
-    c = Client(options.url, options.username, options.chat)
+    c = Client(options.url, options.username, options.chat, options.number, options.delay)
     try:
         c.run()
     except KeyboardInterrupt:
