@@ -14,3 +14,8 @@ compile:
 clean:
 	${REBAR} clean
 
+start: release
+	_build/default/rel/flack/bin/flack start
+
+stop:
+	_build/default/rel/flack/bin/flack stop

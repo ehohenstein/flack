@@ -1,38 +1,31 @@
-%%%-------------------------------------------------------------------
-%% @doc flack top level supervisor.
-%% @end
-%%%-------------------------------------------------------------------
-
 -module(flack_sup).
 
--behaviour(supervisor).
+-behavior(supervisor).
 
-%% API
+% Public API
 -export([start_link/0]).
 
-%% Supervisor callbacks
 -export([init/1]).
 
--define(SERVER, ?MODULE).
+-define(LISTEN_PORT, 8080).
+-define(NUM_ACCEPTORS, 100).
+-define(MAX_CONNS, 10000).
 
-%%====================================================================
-%% API functions
-%%====================================================================
+% public API
 
 start_link() ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+    supervisor:start_link({local, ?MODULE}, ?MODULE, []).
 
-%%====================================================================
-%% Supervisor callbacks
-%%====================================================================
+% Supervisor callbacks
 
-%% Child :: #{id => Id, start => {M, F, A}}
-%% Optional keys are restart, shutdown, type, modules.
-%% Before OTP 18 tuples must be used to specify a child. e.g.
-%% Child :: {Id,StartFunc,Restart,Shutdown,Type,Modules}
+-spec init([]) -> {ok, {supervisor:sup_flags(), [supervisor:child_spec()]}}.
 init([]) ->
-    {ok, {{one_for_all, 0, 1}, []}}.
+    %RanchSupSpec = {ranch_sup, {ranch_sup, start_link, []},
+    %    permanent, 5000, supervisor, [ranch_sup]},
 
-%%====================================================================
-%% Internal functions
-%%====================================================================
+    TransportOptions = #{port => ?LISTEN_PORT, num_acceptors => ?NUM_ACCEPTORS, max_connections => ?MAX_CONNS},
+    Dispatch = cowboy_router:compile([{'_', [{<<"/chat-server">>, chat_client_handler, []}]}]),
+    ListenerSpec = ranch:child_spec(flack, ranch_tcp, TransportOptions, cowboy_clear, #{env => #{dispatch => Dispatch}}),
+
+    {ok, {{one_for_all, 0, 1}, [ListenerSpec]}}.
+
