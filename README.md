@@ -6,11 +6,20 @@ An example distributed chat system written in erlang.
 
 ## Dependencies
 
+```
 Ubuntu Bionic 18.04
-sudo apt-get install python3-pip
-sudo pip3 install websocket-client==0.56
+Erlang 20.2
+Python3 3.6.7
+Rebar3 3.9.1
+```
 
 ## Installation
+
+```
+sudo apt-get install python3-pip
+sudo pip3 install websocket-client==0.56
+sudo apt-get install erlang
+```
 
 ## Tests
 
