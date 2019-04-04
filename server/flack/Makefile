@@ -19,3 +19,6 @@ start: release
 
 stop:
 	_build/default/rel/flack/bin/flack stop
+
+shell:
+	${REBAR} shell
