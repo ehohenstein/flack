@@ -3,7 +3,10 @@ REBAR=../../bin/rebar3
 
 all: flack
 
-flack: release
+flack: test release
+
+test:
+	${REBAR} eunit
 
 release: compile
 	${REBAR} release

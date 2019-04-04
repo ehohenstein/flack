@@ -34,3 +34,12 @@ websocket_info(Message, #chat_client_handler_state{}=State) ->
 terminate(_Reason, _Req, _State) ->
     error_logger:info_msg("chat_client_handler terminating because: ~p", [_Reason]),
     ok.
+
+-include_lib("eunit/include/eunit.hrl").
+
+-ifdef(TEST).
+
+nothing_test() ->
+    ok.
+
+-endif.

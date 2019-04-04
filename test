@@ -13,3 +13,6 @@ for dir in $TEST_DIRS; do
         test_python $file
     done
 done
+
+make -C server/flack test
+
