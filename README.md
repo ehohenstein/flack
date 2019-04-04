@@ -11,6 +11,9 @@ Ubuntu Bionic 18.04
 Erlang 20.2
 Python3 3.6.7
 Rebar3 3.9.1
+Cowboy 2.6.1
+Ranch 1.7.1
+Cowlib 2.7.0
 ```
 
 ## Installation
