@@ -44,7 +44,9 @@ The conversation begins with the client sending a `client_hello` message to the 
 
 If at any point during the conversation, the server determines that a message from the client is unacceptable or malformed, the server will respond with a `protocol_error` message and close the connection.
 
-After the server sends a `server_hello` message, the client can send a `join_chat` message for each chat it wants to join. If a chat does not already exist when a client attempts to join it, the chat will be created. The client can join multiple chats simultaneously. Upon joining a chat, the server will send a `chat_state` message to that user indicating the set of existing users that have already joined the chat and that have not already left followed by a `joined` message for that user to all clients that have joined the chat and not already left, including the client that just joined. Until the client sends a `leave_chat` message, the client can send a `chat_message` to the server for the associated chat and the server will forward the `chat_message` message to all clients that have joined the same chat and not already left, including the client that originally sent the message. After joining a chat the client can send a `leave_chat` message to stop receiving messages for that chat. Upon leaving receiving a `leave_chat` message, the server will send a `left` message to all clients that have joined the chat and not already left, including the client that is leaving.
+After the server sends a `server_hello` message, the client should send an `authenticate` message to the server. The server will respond with an `authenticated` message.
+
+After the server sends an `authenticated` message to the client, the client can send a `join_chat` message for each chat it wants to join. If a chat does not already exist when a client attempts to join it, the chat will be created. The client can join multiple chats simultaneously. Upon joining a chat, the server will send a `chat_state` message to that user indicating the set of existing users that have already joined the chat and that have not already left followed by a `joined` message for that user to all clients that have joined the chat and not already left, including the client that just joined. Until the client sends a `leave_chat` message, the client can send a `chat_message` to the server for the associated chat and the server will forward the `chat_message` message to all clients that have joined the same chat and not already left, including the client that originally sent the message. After joining a chat the client can send a `leave_chat` message to stop receiving messages for that chat. Upon leaving receiving a `leave_chat` message, the server will send a `left` message to all clients that have joined the chat and not already left, including the client that is leaving.
 
 If the connection has been idle for at least 20 seconds, the client should send a `ping` message to the server. Upon receiving a `ping` message, the server will respond to the client with a `ping_reply` message. If the connection is idle for at least 60 seconds, the server may close the connection without sending any additional message.
 
@@ -54,14 +56,12 @@ Before closing the connection, the client should send a `client_goodbye` message
 
 ##### `client_hello`
 
-The `protocol_version` field must contain the value "1.0". The `user_name` field may be any non-empty utf-8 string. The `user_id` field is optional, and if non-empty should be the value of the `user_id` provided to the client in a previous `server_hello` message.
+The `protocol_version` field must contain the value "1.0".
 
 ```javascript
 {
     "record": "client_hello",
-    "protocol_version": "1.0",
-    "user_name": string,
-    "user_id", string
+    "protocol_version": "1.0"
 }
 ```
 
@@ -72,8 +72,7 @@ The `protocol_version` field must contain the value "1.0". The `user_id` field w
 ```javascript
 {
     "record": "server_hello",
-    "protocol_version": "1.0",
-    "user_id": string
+    "protocol_version": "1.0"
 }
 ```
 
@@ -86,6 +85,27 @@ The `code` field will contain an ascii error code associated with the specific e
     "record": "protocol_error",
     "code": string,
     "reason": string
+}
+```
+
+##### `authenticate`
+
+The `user_name` field may be any non-empty utf-8 string. The `user_id` field is optional, and if non-empty should be the value of the `user_id` provided to the client in a previous `server_hello` message.
+
+```javascript
+{
+    "record": "authenticate",
+    "user_name": string,
+    "user_id", string
+}
+```
+
+##### `authenticated`
+
+```javascript
+{
+    "record": "authenticated",
+    "user_id": string
 }
 ```
 
