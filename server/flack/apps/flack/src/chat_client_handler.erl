@@ -84,11 +84,11 @@ extract_client_version(_Other) ->
 
 -spec server_hello(binary()) -> iodata().
 server_hello(Version) ->
-    jiffy:encode({[{<<"record">>, <<"server_hello">>}, {<<"protocol_version">>, Version}]}).
+    {text, jiffy:encode({[{<<"record">>, <<"server_hello">>}, {<<"protocol_version">>, Version}]})}.
 
 -spec protocol_error(binary(), binary()) -> iodata().
 protocol_error(Code, Reason) ->
-    jiffy:encode({[{<<"record">>, <<"protocol_error">>}, {<<"code">>, Code}, {<<"reason">>, Reason}]}).
+    {text, jiffy:encode({[{<<"record">>, <<"protocol_error">>}, {<<"code">>, Code}, {<<"reason">>, Reason}]})}.
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -102,7 +102,7 @@ is_protocol_error(Data) ->
 
 handle_websocket_handles_unexpected_message_test() ->
     State = initial_state(fake_params),
-    {reply, [ProtocolError, close], State} = websocket_handle({binary, <<"blah blah tele blah">>}, State),
+    {reply, [{text, ProtocolError}, close], State} = websocket_handle({binary, <<"blah blah tele blah">>}, State),
     true = is_protocol_error(ProtocolError).
 
 websocket_handle_ping_test() ->
@@ -132,23 +132,23 @@ handle_websocket_initial_client_hello_v1_0_replies_server_hello_test() ->
     State = initial_state(fake_params),
     {reply, Reply, _NewState} =
         websocket_handle({text, <<"{\"record\":\"client_hello\", \"protocol_version\":\"1.0\"}">>}, State),
-    <<"{\"record\":\"server_hello\",\"protocol_version\":\"1.0\"}">> = Reply.
+    {text, <<"{\"record\":\"server_hello\",\"protocol_version\":\"1.0\"}">>} = Reply.
 
 handle_websocket_initial_client_hello_unexpected_version_test() ->
     State = initial_state(fake_params),
-    {reply, [ProtocolError, close], State} =
+    {reply, [{text, ProtocolError}, close], State} =
         websocket_handle({text, <<"{\"record\":\"client_hello\", \"protocol_version\":\"42\"}">>}, State),
     true = is_protocol_error(ProtocolError).
 
 handle_websocket_initial_not_client_hello_test() ->
     State = initial_state(fake_params),
-    {reply, [ProtocolError, close], State} =
+    {reply, [{text, ProtocolError}, close], State} =
         websocket_handle({text, <<"{\"foo\":\"bar\"}">>}, State),
     true = is_protocol_error(ProtocolError).
 
 handle_websocket_initial_bad_json_test() ->
     State = initial_state(fake_params),
-    {reply, [ProtocolError, close], State} =
+    {reply, [{text, ProtocolError}, close], State} =
         websocket_handle({text, <<"not json">>}, State),
     true = is_protocol_error(ProtocolError).
 
