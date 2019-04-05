@@ -65,10 +65,14 @@ class ClientTests(unittest.TestCase):
 
     def send_valid_server_hello(self):
         self.start_client()
-        self.client.onMessage(self.ws, json.dumps({"record": "server_hello", "protocol_version": "1.0", "user_id": self.user_id}))
+        self.client.onMessage(self.ws, json.dumps({"record": "server_hello", "protocol_version": "1.0"}))
+
+    def send_valid_authenticated(self):
+        self.send_valid_server_hello()
+        self.client.onMessage(self.ws, json.dumps({"record": "authenticated", "user_id": self.user_id}))
 
     def send_valid_chat_state(self):
-        self.send_valid_server_hello()
+        self.send_valid_authenticated()
         self.client.onMessage(self.ws, json.dumps({"record": "chat_state", "chat_name": self.chat, "users": []}))
 
     def send_valid_joined(self):
@@ -106,7 +110,7 @@ class ClientTests(unittest.TestCase):
     def test_sends_client_hello_on_open(self):
         self.start_client()
         client_hello = json.loads(self.ws.sent_frames[0])
-        self.assertEqual({"record": "client_hello", "protocol_version": "1.0", "username": self.username}, client_hello)
+        self.assertEqual({"record": "client_hello", "protocol_version": "1.0"}, client_hello)
 
     def test_closes_on_bad_json_message(self):
         self.start_client()
@@ -128,9 +132,24 @@ class ClientTests(unittest.TestCase):
         self.client.onMessage(self.ws, json.dumps({"record": "server_hello"}))
         self.assertFalse(self.ws.running)
 
-    def test_sends_join_on_valid_server_hello(self):
+    def test_sends_authenticate_on_valid_server_hello(self):
         self.send_valid_server_hello()
-        join = json.loads(self.ws.sent_frames[1])
+        authenticate = json.loads(self.ws.sent_frames[1])
+        self.assertEqual({"record": "authenticate", "user_name": self.username}, authenticate)
+
+    def test_closes_on_invalid_authenticated(self):
+        self.send_valid_server_hello()
+        self.client.onMessage(self.ws, json.dumps({"record": "authenticated"}))
+        self.assertFalse(self.ws.running)
+
+    def test_closes_on_authenticated_in_wrong_state(self):
+        self.send_valid_authenticated()
+        self.client.onMessage(self.ws, json.dumps({"record": "authenticated", "user_id": self.user_id}))
+        self.assertFalse(self.ws.running)
+
+    def test_sends_join_on_valid_authenticated(self):
+        self.send_valid_authenticated()
+        join = json.loads(self.ws.sent_frames[2])
         self.assertEqual({"record": "join_chat", "chat_name": self.chat}, join)
 
     def test_closes_on_non_server_hello_message_first(self):
@@ -190,7 +209,7 @@ class ClientTests(unittest.TestCase):
 
     def test_sends_chat_message_after_joining(self):
         self.send_valid_joined()
-        chat_message = json.loads(self.ws.sent_frames[2])
+        chat_message = json.loads(self.ws.sent_frames[3])
         self.assertEqual({'record': 'chat_message', 'chat_name': self.chat, 'mime_type': 'text/plain', 'message': 'I like cats'}, chat_message)
 
     def test_closes_on_bad_chat_message(self):
@@ -214,13 +233,13 @@ class ClientTests(unittest.TestCase):
 
     def test_sends_ping_on_chat_from_self_when_not_done(self):
         self.send_valid_chat()
-        ping = json.loads(self.ws.sent_frames[3])
+        ping = json.loads(self.ws.sent_frames[4])
         self.assertEqual({"record": "ping"}, ping)
 
     def test_sends_leave_chat_on_chat_from_self_when_done(self):
         self.number = 1
         self.send_valid_chat()
-        leave_chat = json.loads(self.ws.sent_frames[3])
+        leave_chat = json.loads(self.ws.sent_frames[4])
         self.assertEqual({"record": "leave_chat", "chat_name": self.chat}, leave_chat)
 
     def test_closes_on_bad_left_message(self):
@@ -252,7 +271,7 @@ class ClientTests(unittest.TestCase):
 
     def test_sends_goodbye_when_self_left(self):
         self.send_valid_left()
-        goodbye = json.loads(self.ws.sent_frames[4])
+        goodbye = json.loads(self.ws.sent_frames[5])
         self.assertEqual({"record": "client_goodbye"}, goodbye)
 
     def test_closes_on_message_before_chat_state(self):
@@ -293,7 +312,7 @@ class ClientTests(unittest.TestCase):
     def test_sends_chat_message_on_ping_reply(self):
         self.send_valid_ping()
         self.client.onMessage(self.ws, json.dumps({"record": "ping_reply"}))
-        chat_message = json.loads(self.ws.sent_frames[4])
+        chat_message = json.loads(self.ws.sent_frames[5])
         self.assertEqual({'record': 'chat_message', 'chat_name': self.chat, 'mime_type': 'text/plain', 'message': 'I like cats'}, chat_message)
 
     def test_waits_before_sending_ping_reply(self):
@@ -313,37 +332,37 @@ class MessageValidationTests(unittest.TestCase):
         self.client = client.Client(url=self.url, username='someone', chat='somechat', number=42, delay=0, ws=self.ws)
 
     def test_message_validation_fails_for_extra_fields(self):
-        self.assertFalse(self.client.validate({'record': 'foobar'}, {'record': 'foobar', 'foo': 'bar'}))
+        self.assertRaises(client.ProtocolError, self.client.validate, {'record': 'foobar'}, {'record': 'foobar', 'foo': 'bar'})
 
     def test_message_validation_fails_for_missing_fields(self):
-        self.assertFalse(self.client.validate({'record': 'foobar', 'foo': str}, {'record': 'foobar'}))
+        self.assertRaises(client.ProtocolError, self.client.validate, {'record': 'foobar', 'foo': str}, {'record': 'foobar'})
 
     def test_message_validation_fails_for_wrong_field_type(self):
-        self.assertFalse(self.client.validate({'record': 'foobar', 'foo': str}, {'record': 'foobar', 'foo': 42}))
+        self.assertRaises(client.ProtocolError, self.client.validate, {'record': 'foobar', 'foo': str}, {'record': 'foobar', 'foo': 42})
 
     def test_message_validation_fails_for_empty_string_type(self):
-        self.assertFalse(self.client.validate({'record': 'foobar', 'foo': str}, {'record': 'foobar', 'foo': ''}))
+        self.assertRaises(client.ProtocolError, self.client.validate, {'record': 'foobar', 'foo': str}, {'record': 'foobar', 'foo': ''})
 
     def test_message_validation_fails_for_wrong_exact_value(self):
-        self.assertFalse(self.client.validate({'record': 'foobar', 'foo': 'bar'}, {'record': 'foobar', 'foo': 'baz'}))
+        self.assertRaises(client.ProtocolError, self.client.validate, {'record': 'foobar', 'foo': 'bar'}, {'record': 'foobar', 'foo': 'baz'})
 
     def test_message_validation_fails_for_non_list_in_list_field(self):
-        self.assertFalse(self.client.validate({'record': 'foobar', 'foo': [{'record': 'bar'}]}, {'record': 'foobar', 'foo': 'bar'}))
+        self.assertRaises(client.ProtocolError, self.client.validate, {'record': 'foobar', 'foo': [{'record': 'bar'}]}, {'record': 'foobar', 'foo': 'bar'})
 
     def test_message_validation_fails_for_bad_list_field(self):
-        self.assertFalse(self.client.validate({'record': 'foobar', 'foo': [{'record': 'bar'}]}, {'record': 'foobar', 'foo': [{'record': 'baz'}]}))
+        self.assertRaises(client.ProtocolError, self.client.validate, {'record': 'foobar', 'foo': [{'record': 'bar'}]}, {'record': 'foobar', 'foo': [{'record': 'baz'}]})
 
     def test_message_validation_fails_for_bad_timestamp_field(self):
-        self.assertFalse(self.client.validate({'record': 'foobar', 'ts': datetime.datetime}, {'record': 'foobar', 'ts': 'foobar'}))
+        self.assertRaises(client.ProtocolError, self.client.validate, {'record': 'foobar', 'ts': datetime.datetime}, {'record': 'foobar', 'ts': 'foobar'})
 
     def test_message_validation_passes_for_good_timestamp_field(self):
-        self.assertTrue(self.client.validate({'record': 'foobar', 'ts': datetime.datetime}, {'record': 'foobar', 'ts': '2015-11-12T08:15:51Z'}))
+        self.client.validate({'record': 'foobar', 'ts': datetime.datetime}, {'record': 'foobar', 'ts': '2015-11-12T08:15:51Z'})
 
     def test_message_validation_passes_for_valid_message(self):
-        self.assertTrue(self.client.validate({'record': 'foobar', 'foo': str}, {'record': 'foobar', 'foo': 'baz'}))
+        self.client.validate({'record': 'foobar', 'foo': str}, {'record': 'foobar', 'foo': 'baz'})
 
     def test_message_validation_passes_for_valid_list_field(self):
-        self.assertTrue(self.client.validate({'record': 'foobar', 'foo': [{'record': 'bar'}]}, {'record': 'foobar', 'foo': [{'record': 'bar'}]}))
+        self.client.validate({'record': 'foobar', 'foo': [{'record': 'bar'}]}, {'record': 'foobar', 'foo': [{'record': 'bar'}]})
 
 unittest.main()
 
