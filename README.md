@@ -16,6 +16,7 @@ Ranch 1.7.1
 Cowlib 2.7.0
 Jiffy 0.15.2
 Gcc 7.3.0
+Erlymock 7.2.2
 ```
 
 ## Installation

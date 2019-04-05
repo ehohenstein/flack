@@ -38,7 +38,23 @@ websocket_handle({text, Message}, #chat_client_handler_state{protocol_handler=no
             error_logger:info_msg("chat_client_handler received unsupported version in client_hello: ~p", [UnsupportedVersion]),
             {reply, [protocol_error(<<"CHAT-002">>, <<"An unsupported protocol version was requested: ", UnsupportedVersion/binary>>), close], State}
     end;
-websocket_handle({text, _Message}, #chat_client_handler_state{}=State) ->
+websocket_handle({text, Message}, #chat_client_handler_state{protocol_handler=Handler, protocol_handler_state=HandlerState}=State) ->
+    Decoded = (catch jiffy:decode(Message)),
+    case Handler:handle_client_message(Decoded, HandlerState) of
+        {ok, NewHandlerState} ->
+            {ok, State#chat_client_handler_state{protocol_handler_state=NewHandlerState}};
+        {reply, ReplyOrReplies, NewHandlerState} ->
+            {reply, ReplyOrReplies, State#chat_client_handler_state{protocol_handler_state=NewHandlerState}};
+        {stop, NewHandlerState} ->
+            {stop, State#chat_client_handler_state{protocol_handler_state=NewHandlerState}}
+    end;
+websocket_handle(ping, #chat_client_handler_state{}=State) ->
+    {ok, State};
+websocket_handle(pong, #chat_client_handler_state{}=State) ->
+    {ok, State};
+websocket_handle({ping, _Message}, #chat_client_handler_state{}=State) ->
+    {ok, State};
+websocket_handle({pong, _Message}, #chat_client_handler_state{}=State) ->
     {ok, State};
 websocket_handle(Any, #chat_client_handler_state{}=State) ->
     error_logger:info_msg("chat_client_handler received unexpected message type from client:~p~n", [Any]),
@@ -89,6 +105,22 @@ handle_websocket_handles_unexpected_message_test() ->
     {reply, [ProtocolError, close], State} = websocket_handle({binary, <<"blah blah tele blah">>}, State),
     true = is_protocol_error(ProtocolError).
 
+websocket_handle_ping_test() ->
+    State = initial_state(fake_params),
+    {ok, State} = websocket_handle(ping, State).
+
+websocket_handle_pong_test() ->
+    State = initial_state(fake_params),
+    {ok, State} = websocket_handle(pong, State).
+
+websocket_handle_ping_with_data_test() ->
+    State = initial_state(fake_params),
+    {ok, State} = websocket_handle({ping, fake_data}, State).
+
+websocket_handle_pong_with_data_test() ->
+    State = initial_state(fake_params),
+    {ok, State} = websocket_handle({pong, fake_data}, State).
+
 handle_websocket_initial_client_hello_v1_0_initializes_protocol_handler_test() ->
     State = initial_state(fake_params),
     {reply, _Reply, #chat_client_handler_state{protocol_handler=ProtoHandler, protocol_handler_state=ProtoState}} =
@@ -119,5 +151,32 @@ handle_websocket_initial_bad_json_test() ->
     {reply, [ProtocolError, close], State} =
         websocket_handle({text, <<"not json">>}, State),
     true = is_protocol_error(ProtocolError).
+
+handle_websocket_forwards_client_messages_to_protocol_handler_test() ->
+    Mock = em:new(),
+    em:strict(Mock, fake_chat_protocol, handle_client_message, [{[{<<"foo">>, <<"bar">>}]}, fake_protocol_state], {return, {ok, new_fake_protocol_state}}),
+    em:replay(Mock),
+    State = #chat_client_handler_state{protocol_handler=fake_chat_protocol, protocol_handler_state=fake_protocol_state},
+    {ok, #chat_client_handler_state{protocol_handler_state=NewProtocolState}} = websocket_handle({text, <<"{\"foo\":\"bar\"}">>}, State),
+    new_fake_protocol_state = NewProtocolState,
+    em:verify(Mock).
+
+handle_websocket_handles_replies_from_protocol_handler_test() ->
+    Mock = em:new(),
+    em:strict(Mock, fake_chat_protocol, handle_client_message, [{[{<<"foo">>, <<"bar">>}]}, fake_protocol_state], {return, {reply, fake_reply, new_fake_protocol_state}}),
+    em:replay(Mock),
+    State = #chat_client_handler_state{protocol_handler=fake_chat_protocol, protocol_handler_state=fake_protocol_state},
+    {reply, fake_reply, #chat_client_handler_state{protocol_handler_state=NewProtocolState}} = websocket_handle({text, <<"{\"foo\":\"bar\"}">>}, State),
+    new_fake_protocol_state = NewProtocolState,
+    em:verify(Mock).
+
+handle_websocket_handles_stop_from_protocol_handler_test() ->
+    Mock = em:new(),
+    em:strict(Mock, fake_chat_protocol, handle_client_message, [{[{<<"foo">>, <<"bar">>}]}, fake_protocol_state], {return, {stop, new_fake_protocol_state}}),
+    em:replay(Mock),
+    State = #chat_client_handler_state{protocol_handler=fake_chat_protocol, protocol_handler_state=fake_protocol_state},
+    {stop, #chat_client_handler_state{protocol_handler_state=NewProtocolState}} = websocket_handle({text, <<"{\"foo\":\"bar\"}">>}, State),
+    new_fake_protocol_state = NewProtocolState,
+    em:verify(Mock).
 
 -endif.
