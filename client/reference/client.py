@@ -41,12 +41,12 @@ class ProtocolError(Exception):
     pass
 
 class Client(object):
-    def __init__(self, url, username, chat, number, delay, ws=websocket, tm=time):
+    def __init__(self, url, username, chat, count, delay, ws=websocket, tm=time):
         self.conn = None
         self.url = url
         self.username = username
         self.chat = chat
-        self.number = number
+        self.count = count
         self.delay = delay
 
         self.ws = ws
@@ -78,6 +78,7 @@ class Client(object):
             self.conn.close()
 
     def onOpen(self, ws):
+        print("connected, sending client_hello")
         client_hello = {"record": "client_hello", "protocol_version": "1.0"}
         self.conn.send(json.dumps(client_hello))
         self.state = CLIENT_STATE_HANDSHAKING
@@ -169,8 +170,8 @@ class Client(object):
         local = self.utc2local(utc)
         print("{0}: ({1}) {2}".format(self.chat_users[message['user_id']], datetime.datetime.strftime(local, "%H:%M"), message['message']))
         if message['user_id'] == self.user_id:
-            self.number -= 1
-            if self.number <= 1:
+            self.count -= 1
+            if self.count <= 1:
                 leave = {'record': 'leave_chat', 'chat_name': self.chat}
                 self.conn.send(json.dumps(leave))
                 self.has_left = True
@@ -245,10 +246,10 @@ class Client(object):
 
 def main(args):
     parser = optparse.OptionParser(usage="usage: %prog --server=<server> --port=<port>")
-    parser.add_option("-u", "--url", dest="url", help="url to use to connect to server")
-    parser.add_option("-n", "--name", dest="username", default="hoser", help="username for (fake) authentication")
-    parser.add_option("-c", "--chat", dest="chat", default="foobar", help="chat name")
-    parser.add_option("-n", "--number", dest="number", type="int", default=100, help="number of messages to send before exiting")
+    parser.add_option("--url", dest="url", help="url to use to connect to server")
+    parser.add_option("--name", dest="username", default="hoser", help="username for (fake) authentication")
+    parser.add_option("--chat", dest="chat", default="foobar", help="chat name")
+    parser.add_option("--count", dest="count", type="int", default=100, help="number of messages to send before exiting")
     parser.add_option("-d", "--delay", dest="delay", type="int", default=1000, help="number of milliseconds to wait between messages")
     options, extra = parser.parse_args(args)
 
@@ -262,7 +263,7 @@ def main(args):
         parser.print_help()
         return 1
 
-    c = Client(options.url, options.username, options.chat, options.number, options.delay)
+    c = Client(options.url, options.username, options.chat, options.count, options.delay)
     try:
         c.run()
     except KeyboardInterrupt:
