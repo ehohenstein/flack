@@ -123,6 +123,7 @@ class Client(object):
             raise ProtocolError('received server_hello message in state {0}'.format(state_to_name(self.state)))
         self.validate({'record': 'server_hello', 'protocol_version': '1.0'}, message)
 
+        print('received server_hello message, sending authenticate')
         authenticate = {'record': 'authenticate', 'user_name': self.username}
         self.conn.send(json.dumps(authenticate))
         self.state = CLIENT_STATE_AUTHENTICATING
@@ -132,6 +133,7 @@ class Client(object):
             raise ProtocolError('received authenticated message in state {0}'.format(state_to_name(self.state)))
         self.validate({'record': 'authenticated', 'user_id': str}, message)
 
+        print('received authenticate message, sending join_chat for {0}'.format(self.chat))
         self.user_id = message['user_id']
         join = {"record": "join_chat", "chat_name": self.chat}
         self.conn.send(json.dumps(join))
