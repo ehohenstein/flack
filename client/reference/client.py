@@ -77,13 +77,13 @@ class Client(object):
         if self.conn:
             self.conn.close()
 
-    def onOpen(self, ws):
+    def onOpen(self):
         print("connected, sending client_hello")
         client_hello = {"record": "client_hello", "protocol_version": "1.0"}
         self.conn.send(json.dumps(client_hello))
         self.state = CLIENT_STATE_HANDSHAKING
 
-    def onMessage(self, ws, raw_message):
+    def onMessage(self, raw_message):
         failed = False
         try:
             message = json.loads(raw_message)
@@ -107,10 +107,10 @@ class Client(object):
         if failed:
             self.conn.close()
 
-    def onError(self, ws, error):
+    def onError(self, error):
         print("\nwebsocket error: {0}".format(error))
 
-    def onClose(self, ws):
+    def onClose(self):
         print("\nwebsocket closed")
 
     def protocolError(self, message):
