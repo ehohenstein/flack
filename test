@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 function test_python {
     TEST=$1
     echo $TEST
