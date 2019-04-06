@@ -8,3 +8,6 @@
     {ok, protocol_state()} | {reply, cow_ws:frame(), protocol_state()} |
     {reply, [cow_ws:frame()], protocol_state()} | {stop, protocol_state()}.
 
+-callback handle_internal_message(any(), protocol_state()) ->
+    {ok, protocol_state()} | {reply, cow_ws:frame(), protocol_state()} |
+    {reply, [cow_ws:frame()], protocol_state()} | {stop, protocol_state()}.

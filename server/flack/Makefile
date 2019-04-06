@@ -1,5 +1,5 @@
 
-REBAR=../../bin/rebar3
+REBAR=GPROC_DIST=true ../../bin/rebar3
 
 all: flack
 

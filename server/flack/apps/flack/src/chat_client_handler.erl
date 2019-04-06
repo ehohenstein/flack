@@ -40,14 +40,7 @@ websocket_handle({text, Message}, #chat_client_handler_state{protocol_handler=no
     end;
 websocket_handle({text, Message}, #chat_client_handler_state{protocol_handler=Handler, protocol_handler_state=HandlerState}=State) ->
     Decoded = (catch jiffy:decode(Message)),
-    case Handler:handle_client_message(Decoded, HandlerState) of
-        {ok, NewHandlerState} ->
-            {ok, State#chat_client_handler_state{protocol_handler_state=NewHandlerState}};
-        {reply, ReplyOrReplies, NewHandlerState} ->
-            {reply, ReplyOrReplies, State#chat_client_handler_state{protocol_handler_state=NewHandlerState}};
-        {stop, NewHandlerState} ->
-            {stop, State#chat_client_handler_state{protocol_handler_state=NewHandlerState}}
-    end;
+    protocol_handler_result(Handler:handle_client_message(Decoded, HandlerState), State);
 websocket_handle(ping, #chat_client_handler_state{}=State) ->
     {ok, State};
 websocket_handle(pong, #chat_client_handler_state{}=State) ->
@@ -61,9 +54,11 @@ websocket_handle(Any, #chat_client_handler_state{}=State) ->
     {reply, [protocol_error(<<"CHAT-003">>, <<"Unexpected message">>), close], State}.
 
 -spec websocket_info(any(), #chat_client_handler_state{}) -> {ok, #chat_client_handler_state{}}.
-websocket_info(Message, #chat_client_handler_state{}=State) ->
-    error_logger:info_msg("chat_client_handler received info: ~p", [Message]),
-    {ok, State}.
+websocket_info(Message, #chat_client_handler_state{protocol_handler=none}=State) ->
+    error_logger:warning_msg("chat_client_handler received unexpected info: ~p", [Message]),
+    {ok, State};
+websocket_info(Message, #chat_client_handler_state{protocol_handler=Handler, protocol_handler_state=HandlerState}=State) ->
+    protocol_handler_result(Handler:handle_internal_message(Message, HandlerState), State).
 
 -spec terminate(any(), cowboy_req:req(), any()) -> ok.
 terminate(_Reason, _Req, _State) ->
@@ -85,6 +80,16 @@ extract_client_version(_Other) ->
 -spec server_hello(binary()) -> iodata().
 server_hello(Version) ->
     {text, jiffy:encode({[{<<"record">>, <<"server_hello">>}, {<<"protocol_version">>, Version}]})}.
+
+-spec protocol_handler_result({ok, any()} | {reply, ws_cow:frame(), any()} | {reply, [ws_cow:frame()], any()} | {stop, any()}, #chat_client_handler_state{}) ->
+    {ok, #chat_client_handler_state{}} | {reply, ws_cow:frame(), #chat_client_handler_state{}} |
+    {reply, [ws_cow:frame()], #chat_client_handler_state{}} | {stop, #chat_client_handler_state{}}.
+protocol_handler_result({ok, NewHandlerState}, #chat_client_handler_state{}=State) ->
+    {ok, State#chat_client_handler_state{protocol_handler_state=NewHandlerState}};
+protocol_handler_result({reply, ReplyOrReplies, NewHandlerState}, #chat_client_handler_state{}=State) ->
+    {reply, ReplyOrReplies, State#chat_client_handler_state{protocol_handler_state=NewHandlerState}};
+protocol_handler_result({stop, NewHandlerState}, #chat_client_handler_state{}=State) ->
+    {stop, State#chat_client_handler_state{protocol_handler_state=NewHandlerState}}.
 
 -spec protocol_error(binary(), binary()) -> iodata().
 protocol_error(Code, Reason) ->
@@ -176,6 +181,37 @@ handle_websocket_handles_stop_from_protocol_handler_test() ->
     em:replay(Mock),
     State = #chat_client_handler_state{protocol_handler=fake_chat_protocol, protocol_handler_state=fake_protocol_state},
     {stop, #chat_client_handler_state{protocol_handler_state=NewProtocolState}} = websocket_handle({text, <<"{\"foo\":\"bar\"}">>}, State),
+    new_fake_protocol_state = NewProtocolState,
+    em:verify(Mock).
+
+handle_info_ignored_when_no_protocol_test() ->
+    State = initial_state(fake_params),
+    {ok, State} = websocket_info(fake_message, State).
+
+handle_info_fowards_messages_to_protocol_handler_when_authenticated_test() ->
+    Mock = em:new(),
+    em:strict(Mock, fake_chat_protocol, handle_internal_message, [fake_message, fake_protocol_state], {return, {ok, new_fake_protocol_state}}),
+    em:replay(Mock),
+    State = #chat_client_handler_state{protocol_handler=fake_chat_protocol, protocol_handler_state=fake_protocol_state},
+    {ok, #chat_client_handler_state{protocol_handler_state=NewProtocolState}} = websocket_info(fake_message, State),
+    new_fake_protocol_state = NewProtocolState,
+    em:verify(Mock).
+
+handle_info_handles_replies_from_protocol_handler_test() ->
+    Mock = em:new(),
+    em:strict(Mock, fake_chat_protocol, handle_internal_message, [fake_message, fake_protocol_state], {return, {reply, fake_reply, new_fake_protocol_state}}),
+    em:replay(Mock),
+    State = #chat_client_handler_state{protocol_handler=fake_chat_protocol, protocol_handler_state=fake_protocol_state},
+    {reply, fake_reply, #chat_client_handler_state{protocol_handler_state=NewProtocolState}} = websocket_info(fake_message, State),
+    new_fake_protocol_state = NewProtocolState,
+    em:verify(Mock).
+
+handle_info_handles_stop_from_protocol_handler_test() ->
+    Mock = em:new(),
+    em:strict(Mock, fake_chat_protocol, handle_internal_message, [fake_message, fake_protocol_state], {return, {stop, new_fake_protocol_state}}),
+    em:replay(Mock),
+    State = #chat_client_handler_state{protocol_handler=fake_chat_protocol, protocol_handler_state=fake_protocol_state},
+    {stop, #chat_client_handler_state{protocol_handler_state=NewProtocolState}} = websocket_info(fake_message, State),
     new_fake_protocol_state = NewProtocolState,
     em:verify(Mock).
 

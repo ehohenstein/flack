@@ -143,6 +143,7 @@ class Client(object):
         if self.state != CLIENT_STATE_JOINING1:
             raise ProtocolError('received chat_state message in state {0}'.format(state_to_name(self.state)))
         self.validate({'record': 'chat_state', 'chat_name': self.chat, 'users': [{'record': 'chat_user', 'user_name': str, 'user_id': str}]}, message)
+        print('received chat_state message with users: {0}'.format(message['users']))
         self.state = CLIENT_STATE_JOINING2
 
     def joined(self, message):

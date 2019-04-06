@@ -8,7 +8,7 @@ An example distributed chat system written in erlang.
 
 ```
 Ubuntu Bionic 18.04
-Erlang 20.2
+Erlang 21.3
 Python3 3.6.7
 Rebar3 3.9.1
 Cowboy 2.6.1
@@ -17,6 +17,8 @@ Cowlib 2.7.0
 Jiffy 0.15.2
 Gcc 7.3.0
 Erlymock 7.2.2
+Gproc 0.8.0
+Gen_leader
 ```
 
 ## Installation
@@ -24,7 +26,9 @@ Erlymock 7.2.2
 ```
 sudo apt-get install python3-pip
 sudo pip3 install websocket-client==0.56
-sudo apt-get install erlang
+wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb && sudo dpkg -i erlang-solutions_1.0_all.deb
+sudo apt-get update
+sudo apt-get install esl-erlang
 ```
 
 ## Tests
