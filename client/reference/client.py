@@ -204,7 +204,8 @@ class Client(object):
             raise ProtocolError('received ping_reply message in state {0}'.format(state_to_name(self.state)))
         self.validate({'record': 'ping_reply'}, message)
 
-        self.tm.sleep(self.delay)
+        print("recieved ping_reply message")
+        self.tm.sleep(float(self.delay) / 1000.0)
 
         chat_message = {'record': 'chat_message', 'chat_name': self.chat, 'mime_type': 'text/plain', 'message': 'I like cats'}
         self.conn.send(json.dumps(chat_message))
