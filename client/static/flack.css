@@ -1,0 +1,96 @@
+
+body, html {
+    height: 100%;
+    width: 100%;
+    margin: 0px;
+}
+
+body {
+    background-color: #FFFFFF;
+    color: black;
+    font-family: Helvetica, sans-serif;
+    font-size: 16px;
+}
+
+.hidden {
+    display: none;
+}
+
+.room-list-container, .content {
+    height: 100%;
+    overflow: auto;
+}
+
+.room-list-container {
+    float: left;
+    width: 250px;
+    background: grey;
+}
+
+.room-list-container .title {
+    padding: 10px;
+    user-select: none;
+}
+
+.room-list-container .list {
+    width: 100%;
+}
+
+.room-list-container .list-item {
+    width: 200;
+    padding: 10px;
+}
+
+.room-list-container .username {
+    user-select: none;
+    padding-left: 10px;
+}
+
+.room-list-container button {
+    border-radius: 4px;
+    float: right;
+}
+
+.room-list-container .list-item.room {
+    padding-left: 20px;
+    user-select: none;
+}
+.root-list-container .list-item.room.selected {
+    background-color: black;
+    font-weight: bold;
+}
+.room-list-container .list-item.room:hover {
+    background-color: darkgrey;
+    cursor: pointer;
+}
+.root-list-container .list-item.room.selected:hover {
+    background-color: grey;
+}
+
+.content {
+    width: calc(100% - 250px);
+    float: right;
+}
+
+.content-messages {
+    padding: 0px 30px 0px 30px;
+    height: calc(100% - 61px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column-reverse;
+}
+
+.content-messages p {
+    margin: 5px 0px 5px 0px;
+}
+
+.content-chatbox {
+    background-color: white;
+    overflow: hidden;
+    position: fixed;
+    bottom: 0;
+    height: 60px;
+    width: 100%;
+    border-top: 1px solid lightgrey;
+}
+
