@@ -22,21 +22,14 @@ body {
     display: none;
 }
 
-.wrapper {
-    margin-left: 250px;
-    height: 100%;
-}
-
 .room-list-container, .content {
     height: 100%;
     overflow: auto;
-    float: left;
 }
 
 .room-list-container {
     float: left;
     width: 250px;
-    margin-left: -250px;
     background: grey;
 }
 
@@ -66,16 +59,45 @@ body {
 
 .room-list-container .list-item.room {
     padding-left: 20px;
+    user-select: none;
 }
-
+.root-list-container .list-item.room.selected {
+    background-color: black;
+    font-weight: bold;
+}
 .room-list-container .list-item.room:hover {
     background-color: darkgrey;
     cursor: pointer;
 }
+.root-list-container .list-item.room.selected:hover {
+    background-color: grey;
+}
 
 .content {
-    width: 100%;
+    width: calc(100% - 250px);
     float: right;
+}
+
+.content-messages {
+    padding: 0px 30px 0px 30px;
+    height: calc(100% - 61px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column-reverse;
+}
+
+.content-messages p {
+    margin: 5px 0px 5px 0px;
+}
+
+.content-chatbox {
+    background-color: white;
+    overflow: hidden;
+    position: fixed;
+    bottom: 0;
+    height: 60px;
+    width: 100%;
+    border-top: 1px solid lightgrey;
 }
 
 </style>
@@ -83,7 +105,6 @@ body {
 
 <body>
 
-<div class="wrapper">
 <div class="room-list-container">
   <div class="title">
     <h1>Flack</h1>
@@ -100,82 +121,85 @@ body {
     <div class="list-item join">
       <input type="text" /><button type="button">Join</button/>
     </div>
-    <div class="list-item room">foobar</div>
+    <div class="list-item room selected">foobar</div>
     <div class="list-item room">barbaz</div>
   </div>
 </div>
 <div class="content">
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-<p>Foobar</p>
-</div>
+  <div class="content-messages">
+<p>Foobar 1</p>
+<p>Foobar 2</p>
+<p>Foobar 3</p>
+<p>Foobar 4</p>
+<p>Foobar 5</p>
+<p>Foobar 6</p>
+<p>Foobar 7</p>
+<p>Foobar 8</p>
+<p>Foobar 9</p>
+<p>Foobar 10</p>
+<p>Foobar 11</p>
+<p>Foobar 12</p>
+<p>Foobar 13</p>
+<p>Foobar 14</p>
+<p>Foobar 15</p>
+<p>Foobar 16</p>
+<p>Foobar 17</p>
+<p>Foobar 18</p>
+<p>Foobar 19</p>
+<p>Foobar 20</p>
+<p>Foobar 21</p>
+<p>Foobar 22</p>
+<p>Foobar 23</p>
+<p>Foobar 24</p>
+<p>Foobar 25</p>
+<p>Foobar 26</p>
+<p>Foobar 27</p>
+<p>Foobar 28</p>
+<p>Foobar 29</p>
+<p>Foobar 30</p>
+<p>Foobar 31</p>
+<p>Foobar 32</p>
+<p>Foobar 33</p>
+<p>Foobar 34</p>
+<p>Foobar 35</p>
+<p>Foobar 36</p>
+<p>Foobar 37</p>
+<p>Foobar 38</p>
+<p>Foobar 39</p>
+<p>Foobar 40</p>
+<p>Foobar 41</p>
+<p>Foobar 42</p>
+<p>Foobar 43</p>
+<p>Foobar 44</p>
+<p>Foobar 45</p>
+<p>Foobar 46</p>
+<p>Foobar 47</p>
+<p>Foobar 48</p>
+<p>Foobar 49</p>
+<p>Foobar 50</p>
+<p>Foobar 51</p>
+<p>Foobar 52</p>
+<p>Foobar 53</p>
+<p>Foobar 54</p>
+<p>Foobar 55</p>
+<p>Foobar 56</p>
+<p>Foobar 57</p>
+<p>Foobar 58</p>
+<p>Foobar 59</p>
+<p>Foobar 60</p>
+<p>Foobar 61</p>
+<p>Foobar 62</p>
+<p>Foobar 63</p>
+<p>Foobar 64</p>
+<p>Foobar 65</p>
+<p>Foobar 66</p>
+<p>Foobar 67</p>
+<p>Foobar 68</p>
+<p>Foobar 69</p>
+<p>Foobar 70</p>
+  </div>
+  <div class="content-chatbox">
+  </div>
 </div>
 
 </body>
