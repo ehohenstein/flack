@@ -3,7 +3,7 @@
 -include("chat_stream.hrl").
 
 % Public API
--export([register_user/2, join/3, post/1]).
+-export([register_user/2, join/3, post/1, leave/2]).
 
 % Public API
 
@@ -29,6 +29,15 @@ post(#chat_message{chat_name=Chat}=Message) ->
     Now = current_timestamp(),
     %TODO: figure out how to use a gproc counter for the sequence
     gproc:send(chat_key(Chat), Message#chat_message{timestamp=Now, sequence=42}).
+
+-spec leave(binary(), binary()) -> true.
+leave(Chat, UserID) ->
+    ChatKey = chat_key(Chat),
+    Now = current_timestamp(),
+    %TODO: figure out how to use a gproc counter for the sequence
+    LeftMessage = #user_left{chat=Chat, user_id=UserID, timestamp=Now, sequence=42},
+    gproc:send(ChatKey, LeftMessage),
+    gproc:unreg(ChatKey).
 
 % Private functions
 
@@ -68,6 +77,16 @@ post_forwards_to_chat_members_test() ->
     em:strict(Mock, gproc, send, [chat_key(<<"fake_chat">>), ForwardedMessage]),
     em:replay(Mock),
     post(Message),
+    em:verify(Mock).
+
+leave_unsubscribes_from_chat_and_sends_left_test() ->
+    LeftMessage = #user_left{chat= <<"foobar">>, user_id= <<"fake_id">>, timestamp= <<"2019-04-06T08:47:21Z">>, sequence=42},
+    Mock = em:new(),
+    em:strict(Mock, stub, system_time, [seconds], {return, 1554540441}),
+    em:strict(Mock, gproc, send, [chat_key(<<"foobar">>), LeftMessage]),
+    em:strict(Mock, gproc, unreg, [chat_key(<<"foobar">>)], {return, true}),
+    em:replay(Mock),
+    leave(<<"foobar">>, <<"fake_id">>),
     em:verify(Mock).
 
 -endif.

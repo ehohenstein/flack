@@ -16,3 +16,10 @@
     sequence :: undefined | integer()
 }).
 
+-record(user_left, {
+    chat :: binary(),
+    user_id :: binary(),
+    timestamp :: binary(),
+    sequence :: integer()
+}).
+

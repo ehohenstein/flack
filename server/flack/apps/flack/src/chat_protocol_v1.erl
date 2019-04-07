@@ -26,6 +26,10 @@
 -record(ping, {
 }).
 
+-record(leave_chat, {
+    chat_name :: binary()
+}).
+
 -type protocol_record() :: #authenticate{} | #join_chat{}.
 
 % chat_protocol functions
@@ -54,6 +58,9 @@ handle_internal_message(#user_joined{chat=Chat, username=JoinedUsername}=Message
 handle_internal_message(#chat_message{chat_name=Chat}=Message, #chat_protocol_v1_state{username=Username}=State) ->
     error_logger:info_msg("chat_protocol_v1 for user ~p forwarding chat message for chat ~p", [Username, Chat]),
     {reply, chat_message(Message), State};
+handle_internal_message(#user_left{chat=Chat, user_id=UserID}=Message, #chat_protocol_v1_state{username=Username}=State) ->
+    error_logger:info_msg("chat_protocol_v1 notifying user ~p that user_id ~p left ~p", [Username, UserID, Chat]),
+    {reply, left(Message), State};
 handle_internal_message(Message, #chat_protocol_v1_state{username=Username}=State) ->
     error_logger:warning_msg("chat_protocol_v1 for user ~p received unhandled internal message:~n~p", [Username, Message]),
     {ok, State}.
@@ -72,6 +79,8 @@ get_record_type({[{<<"record">>, <<"chat_message">>} | Fields]}) ->
         message=proplists:get_value(<<"message">>, Fields)};
 get_record_type({[{<<"record">>, <<"ping">>}]}) ->
     #ping{};
+get_record_type({[{<<"record">>, <<"leave_chat">>} | Fields]}) ->
+    #leave_chat{chat_name=proplists:get_value(<<"chat_name">>, Fields)};
 get_record_type(Message) ->
     error_logger:info_msg("unrecognized message typ", [Message]),
     {error, <<"CHAT_PROTOCOL-001">>, <<"Unrecognized message">>}.
@@ -92,7 +101,9 @@ dispatch_message(#join_chat{}=Message, #chat_protocol_v1_state{}=State) ->
 dispatch_message(#chat_message{}=Message, #chat_protocol_v1_state{}=State) ->
     chat_message(Message, State);
 dispatch_message(#ping{}, #chat_protocol_v1_state{}=State) ->
-    ping(State).
+    ping(State);
+dispatch_message(#leave_chat{}=Message, #chat_protocol_v1_state{}=State) ->
+    leave_chat(Message, State).
 
 -spec authenticate(#authenticate{}, #chat_protocol_v1_state{}) ->
     {reply, cow_ws:frame(), #chat_protocol_v1_state{}} | {reply, [cow_ws:frame()], #chat_protocol_v1_state{}}.
@@ -142,6 +153,18 @@ ping(#chat_protocol_v1_state{username=Username}=State) ->
     error_logger:info_msg("chat_protocol_v1 received ping from ~p", [Username]),
     {reply, ping_reply(), State}.
 
+-spec leave_chat(#leave_chat{}, #chat_protocol_v1_state{}) ->
+    {reply, cow_ws:frame(), #chat_protocol_v1_state{}} | {reply, [cow_ws:frame()], #chat_protocol_v1_state{}}.
+leave_chat(#leave_chat{chat_name=Chat}, #chat_protocol_v1_state{user_id=UserID, chats=Chats}=State) ->
+    case sets:is_element(Chat, Chats) of
+        true ->
+            chat_stream:leave(Chat, UserID),
+            NewChats = sets:del_element(Chat, Chats),
+            {ok, State#chat_protocol_v1_state{chats=NewChats}};
+        false ->
+            {reply, [protocol_error(<<"CHAT_PROTOCOL-008">>, <<"Chat has not been joined">>), close], State}
+    end.
+
 -spec protocol_error(binary(), binary()) -> {text, iodata()}.
 protocol_error(Code, Reason) ->
     {text, jiffy:encode({[{<<"record">>, <<"protocol_error">>}, {<<"code">>, Code}, {<<"reason">>, Reason}]})}.
@@ -173,6 +196,12 @@ chat_message(#chat_message{chat_name=Chat, user_id=UserID, mime_type=MimeType, m
 -spec ping_reply() -> {text, iodata()}.
 ping_reply() ->
     {text, jiffy:encode({[{<<"record">>, <<"ping_reply">>}]})}.
+
+-spec left(#user_left{}) -> {text, iodata()}.
+left(#user_left{chat=Chat, user_id=UserID, timestamp=Timestamp, sequence=Sequence}) ->
+    Record = {[{<<"record">>, <<"left">>}, {<<"chat_name">>, Chat}, {<<"user_id">>, UserID},
+        {<<"timestamp">>, Timestamp}, {<<"sequence">>, Sequence}]},
+    {text, jiffy:encode(Record)}.
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -298,5 +327,21 @@ handle_chat_message_forwards_to_chat_stream_for_chat_already_joined_test() ->
 handle_ping_replies_with_ping_reply_test() ->
     State = authenticated_state(<<"someuser">>, <<"some_user_id">>),
     {reply, {text, <<"{\"record\":\"ping_reply\"}">>}, State} = handle_client_message({[{<<"record">>, <<"ping">>}]}, State).
+
+handle_leave_chat_returns_protocol_error_for_chat_not_joined_test() ->
+    State = authenticated_state(<<"someuser">>, <<"some_user_id">>, [<<"foobar">>]),
+    Message = {[{<<"record">>, <<"leave_chat">>}, {<<"chat_name">>, <<"barbaz">>}]},
+    {reply, [{text, ProtocolError}, close], State} = handle_client_message(Message, State),
+    <<"protocol_error">> = decode_record_type(ProtocolError).
+
+handle_leave_chat_leaves_chat_already_joined_test() ->
+    State = authenticated_state(<<"someuser">>, <<"some_user_id">>, [<<"foobar">>]),
+    Message = {[{<<"record">>, <<"leave_chat">>}, {<<"chat_name">>, <<"foobar">>}]},
+    Mock = em:new(),
+    em:strict(Mock, chat_stream, leave, [<<"foobar">>, <<"some_user_id">>]),
+    em:replay(Mock),
+    {ok, #chat_protocol_v1_state{chats=NewChats}} = handle_client_message(Message, State),
+    em:verify(Mock),
+    0 = sets:size(NewChats).
 
 -endif.
