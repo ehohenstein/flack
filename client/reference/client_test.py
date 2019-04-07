@@ -318,7 +318,7 @@ class ClientTests(unittest.TestCase):
     def test_waits_before_sending_ping_reply(self):
         self.delay = 42
         self.send_valid_ping()
-        self.assertEqual(42, self.tm.slept_ms)
+        self.assertEqual(0.042, self.tm.slept_ms)
 
     def test_closes_when_server_goodbye_received(self):
         self.send_valid_left()
