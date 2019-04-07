@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Flack</title>
+<style>
+
+body, html {
+    height: 100%;
+    width: 100%;
+    margin: 0px;
+}
+
+body {
+    background-color: #FFFFFF;
+    color: black;
+    font-family: Helvetica, sans-serif;
+    font-size: 16px;
+}
+
+.hidden {
+    display: none;
+}
+
+.wrapper {
+    margin-left: 250px;
+    height: 100%;
+}
+
+.room-list-container, .content {
+    height: 100%;
+    overflow: auto;
+    float: left;
+}
+
+.room-list-container {
+    float: left;
+    width: 250px;
+    margin-left: -250px;
+    background: grey;
+}
+
+.room-list-container .title {
+    padding: 10px;
+    user-select: none;
+}
+
+.room-list-container .list {
+    width: 100%;
+}
+
+.room-list-container .list-item {
+    width: 200;
+    padding: 10px;
+}
+
+.room-list-container .username {
+    user-select: none;
+    padding-left: 10px;
+}
+
+.room-list-container button {
+    border-radius: 4px;
+    float: right;
+}
+
+.room-list-container .list-item.room {
+    padding-left: 20px;
+}
+
+.room-list-container .list-item.room:hover {
+    background-color: darkgrey;
+    cursor: pointer;
+}
+
+.content {
+    width: 100%;
+    float: right;
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="wrapper">
+<div class="room-list-container">
+  <div class="title">
+    <h1>Flack</h1>
+  </div>
+  <div class="list">
+    <div class="list-item login">
+      <input type="text" /><button type="button">Login</button>
+    </div>
+    <div class="list-item logout hidden">
+      <span class="username">whoami</span><button type="button">Logout</button>
+    </div>
+  </div>
+  <div class="list">
+    <div class="list-item join">
+      <input type="text" /><button type="button">Join</button/>
+    </div>
+    <div class="list-item room">foobar</div>
+    <div class="list-item room">barbaz</div>
+  </div>
+</div>
+<div class="content">
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+<p>Foobar</p>
+</div>
+</div>
+
+</body>
+
+<script>
+var s = new WebSocket('ws://neptune:8080/chat-server');
+</script>
+</html>
