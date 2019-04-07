@@ -23,6 +23,9 @@
     chat_name :: binary()
 }).
 
+-record(ping, {
+}).
+
 -type protocol_record() :: #authenticate{} | #join_chat{}.
 
 % chat_protocol functions
@@ -67,6 +70,8 @@ get_record_type({[{<<"record">>, <<"chat_message">>} | Fields]}) ->
     #chat_message{chat_name=proplists:get_value(<<"chat_name">>, Fields),
         mime_type=proplists:get_value(<<"mime_type">>, Fields),
         message=proplists:get_value(<<"message">>, Fields)};
+get_record_type({[{<<"record">>, <<"ping">>}]}) ->
+    #ping{};
 get_record_type(Message) ->
     error_logger:info_msg("unrecognized message typ", [Message]),
     {error, <<"CHAT_PROTOCOL-001">>, <<"Unrecognized message">>}.
@@ -85,7 +90,9 @@ dispatch_message(#authenticate{}, #chat_protocol_v1_state{username=Username}=Sta
 dispatch_message(#join_chat{}=Message, #chat_protocol_v1_state{}=State) ->
     join_chat(Message, State);
 dispatch_message(#chat_message{}=Message, #chat_protocol_v1_state{}=State) ->
-    chat_message(Message, State).
+    chat_message(Message, State);
+dispatch_message(#ping{}, #chat_protocol_v1_state{}=State) ->
+    ping(State).
 
 -spec authenticate(#authenticate{}, #chat_protocol_v1_state{}) ->
     {reply, cow_ws:frame(), #chat_protocol_v1_state{}} | {reply, [cow_ws:frame()], #chat_protocol_v1_state{}}.
@@ -130,6 +137,11 @@ chat_message(#chat_message{chat_name=Chat}=Message, #chat_protocol_v1_state{user
             {reply, [protocol_error(<<"CHAT_PROTOCOL-007">>, <<"Chat has not been joined">>), close], State}
     end.
 
+-spec ping(#chat_protocol_v1_state{}) -> {reply, cow_ws:frame(), #chat_protocol_v1_state{}}.
+ping(#chat_protocol_v1_state{username=Username}=State) ->
+    error_logger:info_msg("chat_protocol_v1 received ping from ~p", [Username]),
+    {reply, ping_reply(), State}.
+
 -spec protocol_error(binary(), binary()) -> {text, iodata()}.
 protocol_error(Code, Reason) ->
     {text, jiffy:encode({[{<<"record">>, <<"protocol_error">>}, {<<"code">>, Code}, {<<"reason">>, Reason}]})}.
@@ -157,6 +169,10 @@ chat_message(#chat_message{chat_name=Chat, user_id=UserID, mime_type=MimeType, m
     Record = {[{<<"record">>, <<"chat_message">>}, {<<"chat_name">>, Chat}, {<<"user_id">>, UserID},
         {<<"mime_type">>, MimeType}, {<<"message">>, Message}, {<<"timestamp">>, Timestamp}, {<<"sequence">>, Sequence}]},
     {text, jiffy:encode(Record)}.
+
+-spec ping_reply() -> {text, iodata()}.
+ping_reply() ->
+    {text, jiffy:encode({[{<<"record">>, <<"ping_reply">>}]})}.
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -278,5 +294,9 @@ handle_chat_message_forwards_to_chat_stream_for_chat_already_joined_test() ->
     em:replay(Mock),
     {ok, State} = handle_client_message(Message, State),
     em:verify(Mock).
+
+handle_ping_replies_with_ping_reply_test() ->
+    State = authenticated_state(<<"someuser">>, <<"some_user_id">>),
+    {reply, {text, <<"{\"record\":\"ping_reply\"}">>}, State} = handle_client_message({[{<<"record">>, <<"ping">>}]}, State).
 
 -endif.
