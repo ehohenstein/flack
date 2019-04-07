@@ -177,7 +177,6 @@ class Client(object):
             if self.count <= 1:
                 leave = {'record': 'leave_chat', 'chat_name': self.chat}
                 self.conn.send(json.dumps(leave))
-                self.has_left = True
                 self.state = CLIENT_STATE_SENT_LEAVE
             else:
                 ping = {'record': 'ping'}
@@ -190,14 +189,19 @@ class Client(object):
         self.validate({'record': 'left', 'chat_name': self.chat, 'user_id': str, 'timestamp': datetime.datetime, 'sequence': int}, message)
         if message['user_id'] not in self.chat_users:
             raise ProtocolError("received left message for user not in chat: {0}".format(message))
+
+        user = self.chat_users[message['user_id']]
         del self.chat_users[message['user_id']]
 
         if message['user_id'] == self.user_id:
             if self.state != CLIENT_STATE_SENT_LEAVE:
                 raise ProtocolError("received left message for self without sending leave_chat message: {0}".format(message))
+            print("you left the chat")
             goodbye = {'record': 'client_goodbye'}
             self.conn.send(json.dumps(goodbye))
             self.state = CLIENT_STATE_SENT_GOODBYE
+        else:
+            print("{0} left the chat".format(user))
 
     def pingReply(self, message):
         if self.state != CLIENT_STATE_SENT_PING:
