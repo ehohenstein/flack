@@ -20,7 +20,7 @@ join(Chat, Username, UserID) ->
     %TODO: figure out how to use a gproc counter for the sequence
     gproc:send(ChatKey, #user_joined{chat=Chat, username=Username, user_id=UserID, timestamp=Now, sequence=42}),
     lists:map(fun(Pid) ->
-            Props = gproc:get_attributes(user_key(Pid)),
+            Props = gproc:get_attributes(user_key(Pid), Pid),
             {proplists:get_value(username, Props), proplists:get_value(user_id, Props)}
         end, Pids).
 
@@ -64,7 +64,7 @@ join_subscribes_to_chat_and_gets_members_info_and_sends_join_test() ->
     em:strict(Mock, gproc, reg, [chat_key(<<"fake_chat">>)]),
     em:strict(Mock, stub, system_time, [seconds], {return, 1554540441}),
     em:strict(Mock, gproc, send, [chat_key(<<"fake_chat">>), Joined]),
-    em:strict(Mock, gproc, get_attributes, [user_key(fake_pid)], {return, [{username, <<"other_fake_user">>}, {user_id, <<"other_fake_id">>}]}),
+    em:strict(Mock, gproc, get_attributes, [user_key(fake_pid), fake_pid], {return, [{username, <<"other_fake_user">>}, {user_id, <<"other_fake_id">>}]}),
     em:replay(Mock),
     [{<<"other_fake_user">>, <<"other_fake_id">>}] = join(<<"fake_chat">>, <<"fake_user">>, <<"fake_id">>),
     em:verify(Mock).
