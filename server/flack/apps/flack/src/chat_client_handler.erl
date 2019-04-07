@@ -61,9 +61,10 @@ websocket_info(Message, #chat_client_handler_state{protocol_handler=Handler, pro
     protocol_handler_result(Handler:handle_internal_message(Message, HandlerState), State).
 
 -spec terminate(any(), cowboy_req:req(), any()) -> ok.
-terminate(_Reason, _Req, _State) ->
-    error_logger:info_msg("chat_client_handler terminating because: ~p", [_Reason]),
-    ok.
+terminate(Reason, _Req, #chat_client_handler_state{protocol_handler=none}) ->
+    error_logger:info_msg("chat_client_handler terminating before having protocol handler because: ~p", [Reason]);
+terminate(Reason, _Req, #chat_client_handler_state{protocol_handler=Handler, protocol_handler_state=HandlerState}) ->
+    Handler:terminate(Reason, HandlerState).
 
 % private functions
 
@@ -214,5 +215,15 @@ handle_info_handles_stop_from_protocol_handler_test() ->
     {stop, #chat_client_handler_state{protocol_handler_state=NewProtocolState}} = websocket_info(fake_message, State),
     new_fake_protocol_state = NewProtocolState,
     em:verify(Mock).
+
+terminate_notifies_protocol_handler_if_there_is_one_test() ->
+    Mock = em:new(),
+    em:strict(Mock, fake_chat_protocol, terminate, [fake_reason, fake_protocol_state]),
+    em:replay(Mock),
+    ok = terminate(fake_reason, fake_request, #chat_client_handler_state{protocol_handler=fake_chat_protocol, protocol_handler_state=fake_protocol_state}),
+    em:verify(Mock).
+
+terminate_does_nothing_when_no_protocol_handler_test() ->
+    ok = terminate(fake_reason, fake_request, #chat_client_handler_state{}).
 
 -endif.

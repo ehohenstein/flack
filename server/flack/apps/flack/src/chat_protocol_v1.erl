@@ -5,7 +5,7 @@
 -include("chat_stream.hrl").
 
 % chat_protocol functions
--export([init/0, handle_client_message/2, handle_internal_message/2]).
+-export([init/0, handle_client_message/2, handle_internal_message/2, terminate/2]).
 
 -record(chat_protocol_v1_state, {
     status=authenticating :: authenticating | authenticated,
@@ -67,6 +67,14 @@ handle_internal_message(#user_left{chat=Chat, user_id=UserID}=Message, #chat_pro
 handle_internal_message(Message, #chat_protocol_v1_state{username=Username}=State) ->
     error_logger:warning_msg("chat_protocol_v1 for user ~p received unhandled internal message:~n~p", [Username, Message]),
     {ok, State}.
+
+-spec terminate(any(), #chat_protocol_v1_state{}) -> ok.
+terminate(Reason, #chat_protocol_v1_state{username=Username, user_id=UserID, chats=Chats}) ->
+    error_logger:info_msg("chat_protocol_v1 connection for ~p closing because:~n~p", [Username, Reason]),
+    sets:fold(fun(Chat, none) ->
+            chat_stream:leave(Chat, UserID)
+        end, none, Chats),
+    ok.
 
 % private functions
 
@@ -374,7 +382,16 @@ handle_client_goodbye_leaves_joined_chats_test() ->
     Mock = em:new(),
     em:strict(Mock, chat_stream, leave, [<<"foobar">>, <<"some_user_id">>]),
     em:replay(Mock),
-    handle_client_message(Message, State),
+    {reply, _Replies, #chat_protocol_v1_state{chats=NewChats}} = handle_client_message(Message, State),
+    em:verify(Mock),
+    0 = sets:size(NewChats).
+
+terminate_leaves_chats_test() ->
+    State = authenticated_state(<<"someuser">>, <<"some_user_id">>, [<<"foobar">>]),
+    Mock = em:new(),
+    em:strict(Mock, chat_stream, leave, [<<"foobar">>, <<"some_user_id">>]),
+    em:replay(Mock),
+    ok = terminate(because, State),
     em:verify(Mock).
 
 -endif.
