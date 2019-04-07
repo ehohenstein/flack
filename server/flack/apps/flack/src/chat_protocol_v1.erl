@@ -48,6 +48,9 @@ handle_client_message(Message, #chat_protocol_v1_state{}=State) ->
 handle_internal_message(#user_joined{chat=Chat, username=JoinedUsername}=Message, #chat_protocol_v1_state{username=Username}=State) ->
     error_logger:info_msg("chat_protocol_v1 notifying user ~p that ~p joined ~p", [Username, JoinedUsername, Chat]),
     {reply, joined(Message), State};
+handle_internal_message(#chat_message{chat_name=Chat}=Message, #chat_protocol_v1_state{username=Username}=State) ->
+    error_logger:info_msg("chat_protocol_v1 for user ~p forwarding chat message for chat ~p", [Username, Chat]),
+    {reply, chat_message(Message), State};
 handle_internal_message(Message, #chat_protocol_v1_state{username=Username}=State) ->
     error_logger:warning_msg("chat_protocol_v1 for user ~p received unhandled internal message:~n~p", [Username, Message]),
     {ok, State}.
@@ -56,9 +59,14 @@ handle_internal_message(Message, #chat_protocol_v1_state{username=Username}=Stat
 
 -spec get_record_type(tuple()) -> protocol_record() | {error, binary(), binary()}.
 get_record_type({[{<<"record">>, <<"authenticate">>} | Fields]}) ->
-    #authenticate{username=proplists:get_value(<<"user_name">>, Fields), user_id=proplists:get_value(<<"user_id">>, Fields)};
+    #authenticate{username=proplists:get_value(<<"user_name">>, Fields),
+        user_id=proplists:get_value(<<"user_id">>, Fields)};
 get_record_type({[{<<"record">>, <<"join_chat">>} | Fields]}) ->
     #join_chat{chat_name=proplists:get_value(<<"chat_name">>, Fields)};
+get_record_type({[{<<"record">>, <<"chat_message">>} | Fields]}) ->
+    #chat_message{chat_name=proplists:get_value(<<"chat_name">>, Fields),
+        mime_type=proplists:get_value(<<"mime_type">>, Fields),
+        message=proplists:get_value(<<"message">>, Fields)};
 get_record_type(Message) ->
     error_logger:info_msg("unrecognized message typ", [Message]),
     {error, <<"CHAT_PROTOCOL-001">>, <<"Unrecognized message">>}.
@@ -75,7 +83,9 @@ dispatch_message(#authenticate{}, #chat_protocol_v1_state{username=Username}=Sta
     error_logger:info_msg("chat_protocol_v1 for user ~p received authenticate message while already authenticated", [Username]),
     {reply, [protocol_error(<<"CHAT_PROTOCOL-003">>, <<"Already authenticated">>), close], State};
 dispatch_message(#join_chat{}=Message, #chat_protocol_v1_state{}=State) ->
-    join_chat(Message, State).
+    join_chat(Message, State);
+dispatch_message(#chat_message{}=Message, #chat_protocol_v1_state{}=State) ->
+    chat_message(Message, State).
 
 -spec authenticate(#authenticate{}, #chat_protocol_v1_state{}) ->
     {reply, cow_ws:frame(), #chat_protocol_v1_state{}} | {reply, [cow_ws:frame()], #chat_protocol_v1_state{}}.
@@ -109,6 +119,17 @@ join_chat(#join_chat{chat_name=Chat}, #chat_protocol_v1_state{username=Username,
             {reply, chat_state(Chat, Members), State#chat_protocol_v1_state{chats=NewChats}}
     end.
 
+-spec chat_message(#chat_message{}, #chat_protocol_v1_state{}) ->
+    {reply, cow_ws:frame(), #chat_protocol_v1_state{}} | {reply, [cow_ws:frame()], #chat_protocol_v1_state{}}.
+chat_message(#chat_message{chat_name=Chat}=Message, #chat_protocol_v1_state{user_id=UserID, chats=Chats}=State) ->
+    case sets:is_element(Chat, Chats) of
+        true ->
+            chat_stream:post(Message#chat_message{user_id=UserID}),
+            {ok, State};
+        false ->
+            {reply, [protocol_error(<<"CHAT_PROTOCOL-007">>, <<"Chat has not been joined">>), close], State}
+    end.
+
 -spec protocol_error(binary(), binary()) -> {text, iodata()}.
 protocol_error(Code, Reason) ->
     {text, jiffy:encode({[{<<"record">>, <<"protocol_error">>}, {<<"code">>, Code}, {<<"reason">>, Reason}]})}.
@@ -129,6 +150,12 @@ chat_state(Chat, Members) ->
 joined(#user_joined{chat=Chat, username=Username, user_id=UserID, timestamp=Timestamp, sequence=Sequence}) ->
     Record = {[{<<"record">>, <<"joined">>}, {<<"chat_name">>, Chat}, {<<"user_name">>, Username},
         {<<"user_id">>, UserID}, {<<"timestamp">>, Timestamp}, {<<"sequence">>, Sequence}]},
+    {text, jiffy:encode(Record)}.
+
+-spec chat_message(#chat_message{}) -> {text, iodata()}.
+chat_message(#chat_message{chat_name=Chat, user_id=UserID, mime_type=MimeType, message=Message, timestamp=Timestamp, sequence=Sequence}) ->
+    Record = {[{<<"record">>, <<"chat_message">>}, {<<"chat_name">>, Chat}, {<<"user_id">>, UserID},
+        {<<"mime_type">>, MimeType}, {<<"message">>, Message}, {<<"timestamp">>, Timestamp}, {<<"sequence">>, Sequence}]},
     {text, jiffy:encode(Record)}.
 
 -include_lib("eunit/include/eunit.hrl").
@@ -235,5 +262,21 @@ handle_join_chat_returns_protocol_error_when_already_in_chat_test() ->
     Message = {[{<<"record">>, <<"join_chat">>}, {<<"chat_name">>, <<"foobar">>}]}, 
     {reply, [{text, ProtocolError}, close], State} = handle_client_message(Message, State),
     <<"protocol_error">> = decode_record_type(ProtocolError).
+
+handle_chat_message_returns_protocol_error_for_chat_not_joined_test() ->
+    State = authenticated_state(<<"someuser">>, <<"some_user_id">>, [<<"foobar">>]),
+    Message = {[{<<"record">>, <<"chat_message">>}, {<<"chat_name">>, <<"barbaz">>}, {<<"mime_type">>, <<"text/plain">>}, {<<"I like cats">>}]},
+    {reply, [{text, ProtocolError}, close], State} = handle_client_message(Message, State),
+    <<"protocol_error">> = decode_record_type(ProtocolError).
+
+handle_chat_message_forwards_to_chat_stream_for_chat_already_joined_test() ->
+    State = authenticated_state(<<"someuser">>, <<"some_user_id">>, [<<"foobar">>]),
+    Message = {[{<<"record">>, <<"chat_message">>}, {<<"chat_name">>, <<"foobar">>}, {<<"mime_type">>, <<"text/plain">>}, {<<"message">>, <<"I like cats">>}]},
+    PostedMessage = #chat_message{chat_name= <<"foobar">>, user_id= <<"some_user_id">>, mime_type= <<"text/plain">>, message= <<"I like cats">>},
+    Mock = em:new(),
+    em:strict(Mock, chat_stream, post, [PostedMessage]),
+    em:replay(Mock),
+    {ok, State} = handle_client_message(Message, State),
+    em:verify(Mock).
 
 -endif.
