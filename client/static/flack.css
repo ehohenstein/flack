@@ -57,16 +57,15 @@ body {
     padding-left: 20px;
     user-select: none;
 }
-.root-list-container .list-item.room.selected {
-    background-color: black;
-    font-weight: bold;
+.room-list-container .list-item.room.active {
+    background-color: lightgrey;
 }
 .room-list-container .list-item.room:hover {
     background-color: darkgrey;
     cursor: pointer;
 }
-.root-list-container .list-item.room.selected:hover {
-    background-color: grey;
+.room-list-container .list-item.room.active:hover {
+    background-color: lightgrey;
 }
 
 .content {
@@ -103,7 +102,7 @@ body {
 .chatbox .chat-entry {
     width: calc(100% - 20px);
     height: 40px;
-    border: 3px solid lightgrey;
+    border: 3px solid darkgrey;
     border-radius: 15px;
     margin: 7px 10px 7px 10px;
 }
