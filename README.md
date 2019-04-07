@@ -19,6 +19,7 @@ Gcc 7.3.0
 Erlymock 7.2.2
 Gproc 0.8.0
 Gen_leader
+RequireJS 2.3.6
 ```
 
 ## Installation
