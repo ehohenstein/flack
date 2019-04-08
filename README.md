@@ -17,10 +17,13 @@ Cowlib 2.7.0
 Jiffy 0.15.2
 Gcc 7.3.0
 Erlymock 7.2.2
-Gproc 0.8.0
-Gen_leader
-RequireJS 2.3.6
+gproc 0.8.0
+gen_leader
 JQuery 3.3.1
+node 8.10.0
+npm 3.5.2
+Browserify 16.2.3
+Jest 24.7.1
 ```
 
 ## Installation
@@ -31,6 +34,7 @@ sudo pip3 install websocket-client==0.56
 wget https://packages.erlang-solutions.com/erlang-solutions_1.0_all.deb && sudo dpkg -i erlang-solutions_1.0_all.deb
 sudo apt-get update
 sudo apt-get install esl-erlang
+sudo apt-get install npm
 ```
 
 ## Tests

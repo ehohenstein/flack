@@ -1,5 +1,4 @@
 
-define(["./flack"], function (flack) {
-    new flack('ws://flack:8080/chat-server').start();
-});
+var flack = require('./flack.js');
+new flack('ws://flack:8080/chat-server').start();
 

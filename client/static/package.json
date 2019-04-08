@@ -1,0 +1,17 @@
+{
+  "name": "flack",
+  "version": "1.0.0",
+  "description": "Flack chat client",
+  "main": "flack-app.js",
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {
+    "browserify": "^16.2.3"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "jest"
+  },
+  "author": "Eric Hohenstein"
+}

@@ -1,13 +1,13 @@
 
-define(function () {
-    function FlackApp (url) {
-        this.url = url;
-        this.s = null;
-    }
+function FlackApp (url) {
+    this.url = url;
+    this.s = null;
+}
 
-    FlackApp.prototype.start = function () {
-        this.s = new WebSocket(this.url);
-    }
+FlackApp.prototype.start = function () {
+    console.log("connecting to flack server at " + this.url);
+    this.s = new WebSocket(this.url);
+}
 
-    return FlackApp;
-});
+module.exports = FlackApp;
+
