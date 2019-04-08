@@ -17,4 +17,4 @@ for dir in $TEST_DIRS; do
 done
 
 make -C server/flack test
-
+make -C client/static test
