@@ -1,5 +1,5 @@
 
-define(function () {
-    var s = new WebSocket('ws://flack:8080/chat-server');
+define(["./flack"], function (flack) {
+    new flack('ws://flack:8080/chat-server').start();
 });
 
