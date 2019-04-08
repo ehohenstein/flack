@@ -43,13 +43,36 @@ body {
     padding: 10px;
 }
 
+.room-list-container input {
+    width: 150px;
+}
+
 .room-list-container .username {
     user-select: none;
     padding-left: 10px;
 }
 
+.flack-button {
+	background-color: white;
+	border-radius: 4px;
+	border: 1px solid gainsboro;
+	display: inline-block;
+	cursor: pointer;
+	color: #666666;
+	font-family: Arial;
+	font-size: 10px;
+	padding: 4px 14px;
+	text-decoration: none;
+}
+.flack-button:hover {
+	background-color: #F6F6F6;
+}
+.flack-button:active {
+	position: relative;
+	top: 1px;
+}
+
 .room-list-container button {
-    border-radius: 4px;
     float: right;
 }
 
@@ -108,7 +131,7 @@ body {
 }
 
 .chatbox .chat-entry input {
-    width: calc(100% - 100px);
+    width: calc(100% - 120px);
     margin: 8px 10px 8px 10px;
     padding: 3px;
 }
