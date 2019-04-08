@@ -9,9 +9,11 @@
   "dependencies": {
     "browserify": "^16.2.3"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "jquery": "^3.3.1"
+  },
   "scripts": {
-    "test": "jest"
+    "test": "jest --silent"
   },
   "author": "Eric Hohenstein"
 }
