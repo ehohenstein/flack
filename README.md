@@ -20,6 +20,7 @@ Erlymock 7.2.2
 Gproc 0.8.0
 Gen_leader
 RequireJS 2.3.6
+JQuery 3.3.1
 ```
 
 ## Installation
