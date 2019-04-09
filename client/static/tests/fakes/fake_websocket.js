@@ -10,11 +10,17 @@ function FakeWebSocket(url) {
 
     this.frames_sent = [];
 
+    this.closed = false;
+
     globalSockets.push(this);
 }
 
 FakeWebSocket.prototype.send = function (data) {
     this.frames_sent.push(data);
+};
+
+FakeWebSocket.prototype.close = function () {
+    this.closed = true;
 };
 
 function FakeCloseEvent(code, reason) {

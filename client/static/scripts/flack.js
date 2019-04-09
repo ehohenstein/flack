@@ -24,6 +24,7 @@ function FlackApp (url) {
     this.logout = $('.logout');
     this.logoutText = $('.username', this.logout);
     this.logoutButton = $('button', this.logout);
+    this.logoutButton.click(this.logoutClicked.bind(this));
 
     this.roomList = $('.rooms');
 
@@ -130,6 +131,13 @@ FlackApp.prototype.loginClicked = function () {
     this.checkInputEnabled();
 };
 
+FlackApp.prototype.logoutClicked = function () {
+    console.debug('logout clicked, sending goodbye to flack server');
+    this.send({'record': 'client_goodbye'});
+
+    this.close();
+};
+
 FlackApp.prototype.joinClicked = function () {
     this.state = STATE_JOINING;
 
@@ -215,7 +223,12 @@ FlackApp.prototype.onMessage = function (event) {
     this.fail();
 };
 
-FlackApp.prototype.fail = function () {
+FlackApp.prototype.close = function () {
+    this.ws.close();
+    this.disconnected();
+};
+
+FlackApp.prototype.disconnected = function () {
     this.state = STATE_DISCONNECTED;
     this.ws.onclose = null;
     this.ws = null;
@@ -230,7 +243,13 @@ FlackApp.prototype.fail = function () {
         this.pingTimout = null;
     }
 
+    this.chatInput.val('');
+
     this.checkInputEnabled();
+};
+
+FlackApp.prototype.fail = function () {
+    this.disconnected();
 };
 
 FlackApp.prototype.dispatchMessage = function (message) {

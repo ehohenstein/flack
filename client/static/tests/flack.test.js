@@ -519,4 +519,83 @@ test('chat messagse are removed when disconnected', () => {
     expect($('.content-messages').length).toBe(0);
 });
 
+test('clicking logout when authenticated sends client_goodbye', () => {
+    do_auth();
+    $('.logout button').click();
+    let goodbye = last_message_sent();
+    expect(goodbye).toEqual({'record': 'client_goodbye'});
+});
+
+test('clicking logout when authenticated closes websocket', () => {
+    do_auth();
+    $('.logout button').click();
+    expect(last_websocket().closed).toBe(true);
+});
+
+test('clicking logout when authenticated enables login input', () => {
+    do_auth();
+    $('.logout button').click();
+    expect($('.login input').is(':disabled')).toBe(false);
+});
+
+test('clicking logout when authenticated shows login', () => {
+    do_auth();
+    $('.logout button').click();
+    expect($('.login').hasClass('hidden')).toBe(false);
+});
+
+test('clicking logout when authenticated hides username', () => {
+    do_auth();
+    $('.logout button').click();
+    expect($('.logout').hasClass('hidden')).toBe(true);
+});
+
+test('clicking logout when authenticated disables join input', () => {
+    do_auth();
+    $('.logout button').click();
+    expect($('.join input').is(':disabled')).toBe(true);
+});
+
+test('clicking logout when authenticated clears join input', () => {
+    do_auth();
+    $('.logout button').click();
+    expect($('.join input').val()).toBe('');
+});
+
+test('clicking logout when authenticated disables join button', () => {
+    do_auth();
+    $('.logout button').click();
+    expect($('.join button').is(':disabled')).toBe(true);
+});
+
+test('clicking logout when authenticated removes rooms from room list', () => {
+    do_join();
+    $('.logout button').click();
+    expect($('.rooms .room').length).toBe(0);
+});
+
+test('clicking logout when authenticated removes chat messages', () => {
+    do_join();
+    $('.logout button').click();
+    expect($('.content-messages').length).toBe(0);
+});
+
+test('clicking logout when authenticated clears chat input', () => {
+    do_join();
+    $('.chat-entry input').val('I like cats');
+    $('.logout button').click();
+    expect($('.chat-entry input').val()).toBe('');
+});
+
+test('clicking logout when authenticated disables chat input', () => {
+    do_join();
+    $('.logout button').click();
+    expect($('.chat-entry input').is(':disabled')).toBe(true);
+});
+
+test('clicking logout when authenticated disables chat send button', () => {
+    do_join();
+    $('.logout button').click();
+    expect($('.chat-entry button').is(':disabled')).toBe(true);
+});
 
