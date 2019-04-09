@@ -107,8 +107,22 @@ body {
     flex-direction: column-reverse;
 }
 
-.content-messages p {
+.content-messages .message {
     margin: 5px 30px 5px 30px;
+}
+
+.content-messages .message .timestamp {
+    display: inline-block;
+    width: 85px;
+}
+
+.content-messages .message p {
+    display: inline-block;
+    margin: 0px;
+}
+
+.content-messages .message p .username {
+    font-weight: bold;
 }
 
 .chatbox {
