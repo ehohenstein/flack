@@ -8,14 +8,21 @@ An example distributed chat system written in erlang.
 
 #### Server
 [Ubuntu Bionic 18.04](http://archive.ubuntu.com/ubuntu/dists/bionic/main/installer-amd64/current/images/netboot/mini.iso)
-erlang 21.3
+
+erlang 20.2
+
 [rebar3 3.9.1](https://github.com/erlang/rebar3)
+
 [cowboy 2.6.1](https://github.com/ninenines/cowboy)
+
 [ranch 1.7.1](https://github.com/ninenines/ranch)
+
 [cowlib 2.7.0](https://github.com/ninenines/cowlib)
+
 [jiffy 0.15.2](https://github.com/davisp/jiffy)
-gcc 7.3.0
+
 [gproc 0.8.0](https://github.com/uwiger/gproc)
+
 [gen_leader](https://github.com/garret-smith/gen_leader_revival)
 
 #### Web client
