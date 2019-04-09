@@ -21,7 +21,15 @@ start_link() ->
 -spec init([]) -> {ok, {supervisor:sup_flags(), [supervisor:child_spec()]}}.
 init([]) ->
     TransportOptions = [{port, ?LISTEN_PORT}, {num_acceptors, ?NUM_ACCEPTORS}, {max_connections, ?MAX_CONNS}],
-    Dispatch = cowboy_router:compile([{'_', [{<<"/chat-server">>, chat_client_handler, []}]}]),
+
+    Dispatch = cowboy_router:compile([
+        {'_', [
+            {"/chat-server", chat_client_handler, []},
+            {"/", cowboy_static, {file, "/var/www/flack.html"}},
+            {"/[...]", cowboy_static, {dir, "/var/www"}}
+        ]}
+    ]),
+
     ListenerSpec = ranch:child_spec(flack, ranch_tcp, TransportOptions, cowboy_clear, #{env => #{dispatch => Dispatch}}),
 
     {ok, {{one_for_all, 0, 1}, [ListenerSpec]}}.
