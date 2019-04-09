@@ -9,7 +9,7 @@ test:
 
 build:
 	$(MAKE) -C client/static $@
-	$(MAKE) -C server/flack $@
+	$(MAKE) -C server/flack release
 
 release: build
 	$(MAKE) -C server/flack $@

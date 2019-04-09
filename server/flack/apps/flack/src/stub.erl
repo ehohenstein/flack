@@ -1,7 +1,7 @@
 -module(stub).
 
 % Public API
--export([system_time/1]).
+-export([system_time/1, universaltime/0]).
 
 % Public API
 
@@ -9,3 +9,6 @@
 system_time(Unit) ->
     os:system_time(Unit).
 
+-spec universaltime() -> {{integer(), integer(), integer()}, {integer(), integer(), integer()}}.
+universaltime() ->
+    erlang:universaltime().

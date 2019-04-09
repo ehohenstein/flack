@@ -51,7 +51,8 @@ chat_key(Chat) ->
 
 -spec current_timestamp() -> binary().
 current_timestamp() ->
-    erlang:list_to_binary(calendar:system_time_to_rfc3339(stub:system_time(seconds), [{offset, "Z"}])).
+    {{Year, Month, Day}, {Hour, Min, Sec}} = stub:universaltime(),
+    iolist_to_binary(io_lib:format("~.4.0w-~.2.0w-~.2.0wT~.2.0w:~.2.0w:~.2.0wZ", [Year, Month, Day, Hour, Min, Sec])).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -62,7 +63,7 @@ join_subscribes_to_chat_and_gets_members_info_and_sends_join_test() ->
     Mock = em:new(),
     em:strict(Mock, gproc, lookup_pids, [chat_key(<<"fake_chat">>)], {return, [fake_pid]}),
     em:strict(Mock, gproc, reg, [chat_key(<<"fake_chat">>)]),
-    em:strict(Mock, stub, system_time, [seconds], {return, 1554540441}),
+    em:strict(Mock, stub, universaltime, [], {return, {{2019, 4, 6}, {8, 47, 21}}}),
     em:strict(Mock, gproc, send, [chat_key(<<"fake_chat">>), Joined]),
     em:strict(Mock, gproc, get_attributes, [user_key(fake_pid), fake_pid], {return, [{username, <<"other_fake_user">>}, {user_id, <<"other_fake_id">>}]}),
     em:replay(Mock),
@@ -73,7 +74,7 @@ post_forwards_to_chat_members_test() ->
     Message = #chat_message{chat_name= <<"fake_chat">>, user_id= <<"fake_id">>, mime_type= <<"fake_type">>, message= <<"I like cats">>},
     ForwardedMessage = Message#chat_message{timestamp= <<"2019-04-06T08:47:21Z">>, sequence=42},
     Mock = em:new(),
-    em:strict(Mock, stub, system_time, [seconds], {return, 1554540441}),
+    em:strict(Mock, stub, universaltime, [], {return, {{2019, 4, 6}, {8, 47, 21}}}),
     em:strict(Mock, gproc, send, [chat_key(<<"fake_chat">>), ForwardedMessage]),
     em:replay(Mock),
     post(Message),
@@ -82,7 +83,7 @@ post_forwards_to_chat_members_test() ->
 leave_unsubscribes_from_chat_and_sends_left_test() ->
     LeftMessage = #user_left{chat= <<"foobar">>, user_id= <<"fake_id">>, timestamp= <<"2019-04-06T08:47:21Z">>, sequence=42},
     Mock = em:new(),
-    em:strict(Mock, stub, system_time, [seconds], {return, 1554540441}),
+    em:strict(Mock, stub, universaltime, [], {return, {{2019, 4, 6}, {8, 47, 21}}}),
     em:strict(Mock, gproc, send, [chat_key(<<"foobar">>), LeftMessage]),
     em:strict(Mock, gproc, unreg, [chat_key(<<"foobar">>)], {return, true}),
     em:replay(Mock),
