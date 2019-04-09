@@ -255,7 +255,7 @@ class Client(object):
         return utc + offset
 
 def main(args):
-    parser = optparse.OptionParser(usage="usage: %prog --server=<server> --port=<port>")
+    parser = optparse.OptionParser(usage="usage: %prog --url=<url> [--name=<user name>] [--chat=<room name>] [--count=<count>] [-d|--delay=<interval>]")
     parser.add_option("--url", dest="url", help="url to use to connect to server")
     parser.add_option("--name", dest="username", default="hoser", help="username for (fake) authentication")
     parser.add_option("--chat", dest="chat", default="foobar", help="chat name")
