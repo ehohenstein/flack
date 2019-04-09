@@ -11,6 +11,9 @@ test:
 release: compile
 	${REBAR} release
 
+tar: compile
+	${REBAR} as prod tar
+
 compile:
 	${REBAR} compile
 

@@ -20,7 +20,15 @@ start_link() ->
 
 -spec init([]) -> {ok, {supervisor:sup_flags(), [supervisor:child_spec()]}}.
 init([]) ->
-    TransportOptions = [{port, ?LISTEN_PORT}, {num_acceptors, ?NUM_ACCEPTORS}, {max_connections, ?MAX_CONNS}],
+    error_logger:info_msg("flack server starting as ~p", [node()]),
+
+    Port = case proplists:lookup(port, application:get_all_env()) of
+        {port, P} -> P;
+        none -> ?LISTEN_PORT
+    end,
+    error_logger:info_msg("flack listing on port ~p", [Port]),
+
+    TransportOptions = [{port, Port}, {num_acceptors, ?NUM_ACCEPTORS}, {max_connections, ?MAX_CONNS}],
 
     Dispatch = cowboy_router:compile([
         {'_', [
