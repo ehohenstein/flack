@@ -114,9 +114,16 @@ python3 -u client.py --help
 ```
 for usage information.
 
+To stop the single-node flack server, do:
+
+```
+cd server/flack/
+make stop
+```
+
 #### Distributed mode (locally)
 
-The server can be tested in distributed mode locally with a little more effort than in single node mode.
+The server can be tested in distributed mode locally with a little more effort than in single node mode. Note that if you started the single-node server above and it's still running, it will interfere with the distributed version as it will still be using port 8080 needed by the first server node started below.
 
 First, the front-end files should be installed in `/var/www/` if they haven't already been.
 
