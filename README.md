@@ -126,22 +126,22 @@ Next, build a release tarball for the server. From the project root folder, do:
 cd server/flack/
 make tar
 ```
-The tarball will be built as `_build/prod/rel/flack/flack-1.0.1.tar.gz`. The tarball can be copied anywhere else on the filesystem and extracted and executed. It can even be copied to another host and run without installing erlang. Choose a directory and copy it there. The do:
+The tarball will be built as `_build/prod/rel/flack/flack-1.0.2.tar.gz`. The tarball can be copied anywhere else on the filesystem and extracted and executed. It can even be copied to another host and run without installing erlang. Choose a directory and copy it there. The do:
 ```
 mkdir flack1
 cd flack1/
-tar -xzf ../flack-1.0.1.tar.gz
+tar -xzf ../flack-1.0.2.tar.gz
 cd ..
 mkdir flack2
 cd flack2
-tar -xzf ../flack-1.0.1.tar.gz
+tar -xzf ../flack-1.0.2.tar.gz
 cd ..
 mkdir flack3
 cd flack3
-tar -xzf ../flack-1.0.1.tar.gz
+tar -xzf ../flack-1.0.2.tar.gz
 cd ..
 ```
-Now you will need to use your favorite editor to modify the `vm.args` file in the `releases/1.0.1/` folder of each of `flack1`, `flack2`, and `flack3`. Change the line with `-sname flack` to be `-sname flack1` under the `flack1` folder, `-sname flack2` under the `flack2` folder, and `-sname flack3` under the `flack3` folder.
+Now you will need to use your favorite editor to modify the `vm.args` file in the `releases/1.0.2/` folder of each of `flack1`, `flack2`, and `flack3`. Change the line with `-sname flack` to be `-sname flack1` under the `flack1` folder, `-sname flack2` under the `flack2` folder, and `-sname flack3` under the `flack3` folder.
 Now you will need to modify the `sys.config` file in the same directories. This time you will need to replace `{gproc, [{gproc_dist, all}]}` with `{gproc, [{gproc_dist, [flack1@<hostname>,flack2@<hostname>,flack3@<hostname>]}]}` in each of the 3 files, replacing `<hostname>` with the name of the host where you are testing.
 
 Now the three nodes can be started by doing:
