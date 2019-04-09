@@ -112,13 +112,9 @@ ChatRoom.prototype.hide = function () {
 ChatRoom.prototype.addMeta = function (text, sequence) {
     let message = $('<div></div>').addClass('message');
 
-    message.append($('<div></div>').addClass('timestamp'));
-
-    let message_text = $('<div></div>').addClass('message-text');
     let paragraph = $('<p></p>');
     paragraph.append($('<span></span>').addClass('text').text(text));
-    message_text.append(paragraph);
-    message.append(message_text);
+    message.append(paragraph);
 
     this.messages.prepend(message);
 };
