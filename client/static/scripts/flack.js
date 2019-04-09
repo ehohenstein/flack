@@ -215,7 +215,6 @@ FlackApp.prototype.onMessage = function (event) {
     }
     if (message !== null) {
         if (this.dispatchMessage(message)) {
-            this.onActive();
             return;
         }
     }
@@ -276,6 +275,7 @@ FlackApp.prototype.dispatchMessage = function (message) {
             this.onLeft(message);
             break;
         case "ping_reply":
+            console.debug("received ping_reply from slack server");
             break;
         default:
             return false;
@@ -392,6 +392,7 @@ FlackApp.prototype.onActive = function () {
 };
 
 FlackApp.prototype.onIdle = function () {
+    console.debug("sending ping to flack server");
     this.pingTimeout = null;
     this.send({'record': 'ping'});
 };
