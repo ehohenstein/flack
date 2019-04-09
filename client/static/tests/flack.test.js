@@ -466,7 +466,7 @@ test('clicking room in list deselects previous room', () => {
     do_join();
     do_join_another('barbaz');
     expect($('.rooms .room:contains("barbaz")').hasClass('active')).toBe(true);
-    $('.rooms .room:contains("fooobar")').click();
+    $('.rooms .room:contains("foobar")').click();
     expect($('.rooms .room:contains("barbaz")').hasClass('active')).toBe(false);
 });
 
@@ -510,7 +510,7 @@ test('messages arriving for inactive room are visible when that room is active',
 test('chats are removed from list when disconnected', () => {
     do_join();
     last_websocket().onclose(new FakeWebSocket.FakeCloseEvent(42, 'because'));
-    expect($('.rooms').length).toBe(0);
+    expect($('.rooms .room').length).toBe(0);
 });
 
 test('chat messagse are removed when disconnected', () => {
