@@ -4,6 +4,10 @@ $ = require("jquery");
 const FakeWebSocket = require("./fakes/fake_websocket");
 window.WebSocket = FakeWebSocket.FakeWebSocket;
 
+const FakeTimeout = require("./fakes/fake_timeout");
+window.setTimeout = FakeTimeout.setTimeout;
+window.clearTimeout = FakeTimeout.clearTimeout;
+
 function get_flack_dom() {
     let html =
         '<div class="room-list-container">' +
@@ -308,6 +312,27 @@ test('chat send button sends chat when clicked', () => {
     expect(chat_message).toEqual({'record': 'chat_message', 'chat_name': 'foobar', 'mime_type': 'text/plain', 'message': 'I like cats'});
 });
 
+test('chat input is cleared when message sent', () => {
+    do_join();
+    $('.chat-entry input').val('I like cats').keypress();
+    $('.chat-entry button').click();
+    expect($('.chat-entry input').val()).toBe('');
+});
+
+test('chat input is enabled when message sent', () => {
+    do_join();
+    $('.chat-entry input').val('I like cats').keypress();
+    $('.chat-entry button').click();
+    expect($('.chat-entry input').is(':disabled')).toBe(false);
+});
+
+test('chat send button is disabled when message sent', () => {
+    do_join();
+    $('.chat-entry input').val('I like cats').keypress();
+    $('.chat-entry button').click();
+    expect($('.chat-entry button').is(':disabled')).toBe(true);
+});
+
 test('chat messages from other users already in the room are displayed', () => {
     do_say('foobar', '987654', 'hi there');
     expect($('.content-messages.visible .message').length).toBe(3);
@@ -424,7 +449,7 @@ test('clicking leave button of last room disables chat send button', () => {
 test('clicking room in list selects that room', () => {
     do_join();
     do_join_another('barbaz');
-    $($('.rooms .room button')[1]).click();
+    $('.rooms .room:contains("foobar")').click();
     expect($('.rooms .room.active .name').text()).toBe('foobar');
 });
 
@@ -432,7 +457,7 @@ test('clicking active room in list does nothing', () => {
     do_join();
     do_join_another('barbaz');
     $('.chat-entry input').val('I like cats');
-    $($('.rooms .room button')[0]).click();
+    $('.rooms .room.active').click();
     expect($('.rooms .room.active .name').text()).toBe('barbaz');
     expect($('.chat-entry input').val()).toBe('I like cats');
 });
@@ -440,29 +465,30 @@ test('clicking active room in list does nothing', () => {
 test('clicking room in list deselects previous room', () => {
     do_join();
     do_join_another('barbaz');
-    $($('.rooms .room button')[1]).click();
-    expect($($('.rooms .room button')[1]).hasClass('active')).toBe(false);
+    expect($('.rooms .room:contains("barbaz")').hasClass('active')).toBe(true);
+    $('.rooms .room:contains("fooobar")').click();
+    expect($('.rooms .room:contains("barbaz")').hasClass('active')).toBe(false);
 });
 
 test('clicking room in list shows chats for that room', () => {
     do_say('foobar', '123456', 'howdy');
     do_join_another('barbaz');
-    $($('.rooms .room button')[1]).click();
+    $('.rooms .room:contains("foobar")').click();
     expect($('.content-messages.visible .message').length).toBe(3);
 });
 
 test('clicking room in list hides chats for previous room', () => {
     do_say('foobar', '123456', 'howdy');
     do_join_another('barbaz');
-    $($('.rooms .room button')[1]).click();
-    expect($('.content-messages.visible .message').length).toBe(2);
+    $('.rooms .room:contains("foobar")').click();
+    expect($('.content-messages.visible .message').length).toBe(3);
 });
 
 test('clicking room in list clears chat input', () => {
     do_join();
     do_join_another('barbaz');
     $('.chat-entry input').val('I like cats').keypress();
-    $($('.rooms .room button')[1]).click();
+    $('.rooms .room:contains("foobar")').click();
     expect($('.chat-entry input').val()).toBe('');
 });
 
@@ -477,7 +503,20 @@ test('messages arriving for inactive room are visible when that room is active',
     do_join();
     do_join_another('barbaz');
     last_websocket().onmessage(new FakeWebSocket.FakeMessageEvent({'record': 'chat_message', 'chat_name': 'foobar', 'user_id': '987654', 'mime_type': 'text/plain', 'message': 'say wut?', 'timestamp': '2019-04-08T15:31:42Z', 'sequence': 2}));
-    $($('.rooms .room button')[1]).click();
+    $('.rooms .room:contains("foobar")').click();
     expect($('.content-messages.visible .message').length).toBe(3);
 });
+
+test('chats are removed from list when disconnected', () => {
+    do_join();
+    last_websocket().onclose(new FakeWebSocket.FakeCloseEvent(42, 'because'));
+    expect($('.rooms').length).toBe(0);
+});
+
+test('chat messagse are removed when disconnected', () => {
+    do_join();
+    last_websocket().onclose(new FakeWebSocket.FakeCloseEvent(42, 'because'));
+    expect($('.content-messages').length).toBe(0);
+});
+
 

@@ -9,6 +9,8 @@ const STATE_AUTHENTICATED = 4;
 const STATE_JOINING = 5;
 const STATE_DISCONNECTING = 6;
 
+const PING_TIMEOUT = 20000;
+
 function FlackApp (url) {
     this.url = url;
     this.ws = null;
@@ -46,6 +48,8 @@ function FlackApp (url) {
 
     this.chats = {};
     this.currentChat = null;
+
+    this.pingTimeout = null;
 
     this.init();
 }
@@ -133,7 +137,7 @@ FlackApp.prototype.joinClicked = function () {
     console.debug("joining chat " + name);
 
     let join = {'record': 'join_chat', 'chat_name': name};
-    this.ws.send(JSON.stringify(join));
+    this.send(join);
 
     this.chats[name] = new ChatRoom(name, this.user_id, this.roomList, this.content, this.roomSelected.bind(this), this.leaveClicked.bind(this));
 
@@ -144,31 +148,34 @@ FlackApp.prototype.sendClicked = function () {
     let text = this.chatInput.val();
     if (this.currentChat !== null) {
         let activeChat = this.currentChat.name;
-        console.log("sending chat message to room " + activeChat + ": " + text);
+        console.debug("sending chat message to room " + activeChat + ": " + text);
 
         let message = {'record': 'chat_message', 'chat_name': activeChat, 'mime_type': 'text/plain', 'message': text};
-        this.ws.send(JSON.stringify(message));
+        this.send(message);
+
+        this.chatInput.val('');
+        this.checkInputEnabled();
     }
 };
 
 FlackApp.prototype.roomSelected = function (name) {
-    console.log("room " + name + " selected");
-    if (this.currentRoom) {
-        this.currentRoom.hide();
+    console.debug("room " + name + " selected");
+    if (this.currentChat) {
+        this.currentChat.hide();
     }
     if (this.chats.hasOwnProperty(name)) {
-        this.currentRoom = this.chats[name];
-        this.currentRoom.show();
+        this.currentChat = this.chats[name];
+        this.currentChat.show();
         this.chatInput.val('');
     }
     this.checkInputEnabled();
 };
 
 FlackApp.prototype.leaveClicked = function (name) {
-    console.log("sending leave_chat for room " + name);
+    console.debug("sending leave_chat for room " + name);
 
     let message = {'record': 'leave_chat', 'chat_name': name};
-    this.ws.send(JSON.stringify(message));
+    this.send(message)
 
     delete this.chats[name];
 
@@ -183,7 +190,7 @@ FlackApp.prototype.onOpen = function () {
 
     console.debug("connected to flack server");
 
-    this.ws.send(JSON.stringify({'record': 'client_hello', 'protocol_version': '1.0'}));
+    this.send({'record': 'client_hello', 'protocol_version': '1.0'});
 };
 
 FlackApp.prototype.onClose = function (close) {
@@ -200,10 +207,11 @@ FlackApp.prototype.onMessage = function (event) {
     }
     if (message !== null) {
         if (this.dispatchMessage(message)) {
+            this.onActive();
             return;
         }
     }
-    console.log("received unexpected message from flack server: " + event.data);
+    console.debug("received unexpected message from flack server: " + event.data);
     this.fail();
 };
 
@@ -211,6 +219,16 @@ FlackApp.prototype.fail = function () {
     this.state = STATE_DISCONNECTED;
     this.ws.onclose = null;
     this.ws = null;
+    Object.keys(this.chats).forEach((name) => {
+        this.chats[name].close();
+    });
+    this.chats = {};
+    this.currentChat = null;
+
+    if (this.pingTimeout !== null) {
+        clearTimeout(this.pingTimeout);
+        this.pingTimout = null;
+    }
 
     this.checkInputEnabled();
 };
@@ -238,6 +256,8 @@ FlackApp.prototype.dispatchMessage = function (message) {
         case "left":
             this.onLeft(message);
             break;
+        case "ping_reply":
+            break;
         default:
             return false;
     }
@@ -245,21 +265,21 @@ FlackApp.prototype.dispatchMessage = function (message) {
 };
 
 FlackApp.prototype.onProtocolError = function (message) {
-    console.log("received protocol_error message from flack server, code=" + message.code + ", reason=" + message.reason);
+    console.debug("received protocol_error message from flack server, code=" + message.code + ", reason=" + message.reason);
     this.fail();
 };
 
 FlackApp.prototype.onServerHello = function (message) {
-    console.log("received server_hello for protocol version " + message.protocol_version);
+    console.debug("received server_hello for protocol version " + message.protocol_version);
 
     this.state = STATE_AUTHENTICATING;
 
     let authenticate = {'record': 'authenticate', 'user_name': this.username};
-    this.ws.send(JSON.stringify(authenticate));
+    this.send(authenticate);
 };
 
 FlackApp.prototype.onAuthenticated = function (message) {
-    console.log("authenticted with flack server as user_id " + message.user_id);
+    console.debug("authenticted with flack server as user_id " + message.user_id);
 
     this.state = STATE_AUTHENTICATED;
 
@@ -271,13 +291,13 @@ FlackApp.prototype.onAuthenticated = function (message) {
 
 FlackApp.prototype.onChatState = function (message) {
     let users = message['users'].map((user) => { return user['user_name']; }).join(', ');
-    console.log("received chat_state from flack server with users " + users);
+    console.debug("received chat_state from flack server with users " + users);
     this.chats[message.chat_name].setState(message['users']);
 };
 
 FlackApp.prototype.onJoined = function (message) {
     let name = message.chat_name;
-    console.log("received joined from flack server for chat " + name + " and user " + message.user_name);
+    console.debug("received joined from flack server for chat " + name + " and user " + message.user_name);
 
     // TODO: make sure not to set state to authenticated while in a state other than joining
     this.state = STATE_AUTHENTICATED;
@@ -285,6 +305,9 @@ FlackApp.prototype.onJoined = function (message) {
     if (this.chats.hasOwnProperty(name)) {
         this.chats[name].userJoined(message.user_name, message.user_id);
         if (message.user_id == this.user_id) {
+            if (this.currentChat !== null) {
+                this.currentChat.hide();
+            }
             this.currentChat = this.chats[name];
             $('.room.active', this.roomList).removeClass('active');
             this.chatInput.val('');
@@ -299,7 +322,7 @@ FlackApp.prototype.onJoined = function (message) {
 
 FlackApp.prototype.onChatMessage = function (message) {
     let name = message.chat_name;
-    console.log("received message for chat " + name + " from user " + message.user_id + ": " + message.message);
+    console.debug("received message for chat " + name + " from user " + message.user_id + ": " + message.message);
     if (this.chats.hasOwnProperty(name)) {
         this.chats[message.chat_name].messageReceived(message.user_id, message.message, message.timestamp, message.sequence);
     }
@@ -307,7 +330,7 @@ FlackApp.prototype.onChatMessage = function (message) {
 
 FlackApp.prototype.onLeft = function (message) {
     let name = message.chat_name;
-    console.log("received left from flack server for chat " + name + " for user " + message.user_id);
+    console.debug("received left from flack server for chat " + name + " for user " + message.user_id);
 
     if (this.chats.hasOwnProperty(name)) {
         this.chats[name].userLeft(message.user_id, message.sequence);
@@ -333,6 +356,26 @@ FlackApp.prototype.selectNextChat = function (name) {
     }
     this.checkInputEnabled();
 }
+
+FlackApp.prototype.send = function (message) {
+    if (this.ws !== null) {
+        this.onActive();
+        this.ws.send(JSON.stringify(message));
+    }
+}
+
+
+FlackApp.prototype.onActive = function () {
+    if (this.pingTimeout !== null) {
+        clearTimeout(this.pingTimeout);
+    }
+    this.pingTimeout = setTimeout(this.onIdle.bind(this), PING_TIMEOUT);
+};
+
+FlackApp.prototype.onIdle = function () {
+    this.pingTimeout = null;
+    this.send({'record': 'ping'});
+};
 
 module.exports = FlackApp;
 

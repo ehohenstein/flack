@@ -22,6 +22,11 @@ function ChatRoom(name, user_id, roomList, content, onSelect, onLeave) {
     this.users = {};
 }
 
+ChatRoom.prototype.close = function () {
+    this.listItem.remove();
+    this.messages.remove();
+};
+
 ChatRoom.prototype.onSelectClicked = function () {
     if (!this.listItem.hasClass('active')) {
         this.onSelect(this.name);
@@ -29,8 +34,7 @@ ChatRoom.prototype.onSelectClicked = function () {
 };
 
 ChatRoom.prototype.onLeaveClicked = function () {
-    this.listItem.remove();
-    this.messages.remove();
+    this.close();
     this.onLeave(this.name);
 };
 
@@ -79,18 +83,14 @@ ChatRoom.prototype.messageReceived = function (user_id, text, timestamp, sequenc
 
 ChatRoom.prototype.enable = function () {
     let rooms = $('.room', this.roomList);
-    let after = null;
+    var after = $('.join', this.roomList);
     rooms.each((index, room) => {
         let name = $('.name', room).text();
         if (name < this.name) {
             after = room;
         }
     });
-    if (after === null) {
-        this.roomList.append(this.listItem);
-    } else {
-        this.listItem.insertAfter(after);
-    }
+    this.listItem.insertAfter(after);
 
     this.content.append(this.messages);
 
@@ -98,12 +98,15 @@ ChatRoom.prototype.enable = function () {
 };
 
 ChatRoom.prototype.show = function () {
-    //TODO: de-select the currently selected room first
     this.listItem.addClass('active');
     this.messages.addClass('visible');
+    this.messages.removeClass('hidden');
 };
 
 ChatRoom.prototype.hide = function () {
+    this.listItem.removeClass('active');
+    this.messages.removeClass('visible');
+    this.messages.addClass('hidden');
 };
 
 ChatRoom.prototype.addMeta = function (text, sequence) {

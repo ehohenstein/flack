@@ -107,13 +107,17 @@ body {
     flex-direction: column-reverse;
 }
 
+.content-messages.hidden {
+    display: none;
+}
+
 .content-messages .message {
     margin: 5px 30px 5px 30px;
 }
 
 .content-messages .message .timestamp {
     display: inline-block;
-    width: 85px;
+    width: 100px;
 }
 
 .content-messages .message p {
