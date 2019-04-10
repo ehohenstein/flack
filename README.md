@@ -4,6 +4,8 @@
 
 An example distributed chat system written in erlang.
 
+The web client has been tested on Windows 7 in Chrome version 73.0.3683.86 and in Firefox 66.0.2.
+
 ## Dependencies
 
 #### Server
