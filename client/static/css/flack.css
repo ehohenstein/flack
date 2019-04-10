@@ -32,6 +32,7 @@ body {
 .room-list-container .title {
     padding: 10px;
     user-select: none;
+    -moz-user-select: none;
 }
 
 .room-list-container .list {
@@ -39,7 +40,6 @@ body {
 }
 
 .room-list-container .list-item {
-    width: 200;
     padding: 10px;
 }
 
@@ -49,6 +49,7 @@ body {
 
 .room-list-container .username {
     user-select: none;
+    -moz-user-select: none;
     padding-left: 10px;
 }
 
@@ -79,6 +80,7 @@ body {
 .room-list-container .list-item.room {
     padding-left: 20px;
     user-select: none;
+    -moz-user-select: none;
 }
 .room-list-container .list-item.room.active {
     background-color: lightgrey;
