@@ -46,6 +46,12 @@ browserify 16.2.3
 jest 24.7.1
 ```
 
+#### Local docker deploy
+```
+docker
+```
+
+
 ## Building
 #### Build setup
 First install the dependency packages:
@@ -58,8 +64,15 @@ sudo apt-get install make
 sudo apt-get install npm
 sudo apt-get install erlang
 sudo apt-get install python3-pip
+sudo apt-get install docker-engine
 sudo pip3 install websocket-client==0.56
 ```
+
+Allow non-root user to run docker commands:
+```
+sudo usermod -aG docker $USER
+```
+It is necessary to restart your shell after running this command or it will not have an effect.
 
 Next download the code:
 ```

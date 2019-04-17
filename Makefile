@@ -9,7 +9,7 @@ test:
 
 build:
 	$(MAKE) -C client/static $@
-	$(MAKE) -C server/flack release
+	$(MAKE) -C server/flack tar
 
 release: build
 	$(MAKE) -C server/flack $@
@@ -28,13 +28,13 @@ install:
 containers: build release
 	$(MAKE) -C docker $@
 
-docker-run-single:
+docker-run-single: build
 	$(MAKE) -C docker run-single
 
 docker-stop-single:
 	$(MAKE) -C docker stop-single
 
-docker-run-cluster:
+docker-run-cluster: build
 	$(MAKE) -C docker run-cluster
 
 docker-stop-cluster:

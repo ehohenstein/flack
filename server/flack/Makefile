@@ -18,7 +18,7 @@ compile:
 	${REBAR} compile
 
 clean:
-	${REBAR} clean
+	rm -rf _build
 
 start: release
 	_build/default/rel/flack/bin/flack start
