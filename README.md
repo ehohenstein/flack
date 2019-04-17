@@ -109,7 +109,7 @@ make release
 make start
 ```
 
-The server should be running and listening on port 8080. Using a browser, got to http://<hostname>:8080/.
+The server should be running and listening on port 8080. Using a browser, got to `http://<hostname>:8080/`.
 
 Enter your name in the text box in the upper left and then press enter or click the login button next to it. Your browser should be connected to the flack server and the name should have changed to a text element with a logout button next to it.
 
@@ -144,7 +144,7 @@ If you have docker installed, you can run flack in a docker container. If you ha
 make docker-run-single
 ```
 
-You should be able to test by going to http://<hostname>:8080/ in a browser and with the reference client, as above.
+You should be able to test by going to `http://<hostname>:8080/` in a browser and with the reference client, as above.
 
 To stop flack, do this:
 
@@ -191,7 +191,7 @@ bin/flack start -flack port 8081
 cd ../flack3/
 bin/flack start -flack port 8082
 ```
-All three nodes should now be running locally and connected to each other. You can again test flack in a browser by going to http://<hostname>:8080/. If you login and join the chat `foobar`, you can run the reference client against any of the 3 ports, `8080`, `8081`, or `8082` and you should see the spam from the reference client show up in your browser, which should demonstrate that the 3 nodes are connected and chat messages are flowing between them.
+All three nodes should now be running locally and connected to each other. You can again test flack in a browser by going to `http://<hostname>:8080/`. If you login and join the chat `foobar`, you can run the reference client against any of the 3 ports, `8080`, `8081`, or `8082` and you should see the spam from the reference client show up in your browser, which should demonstrate that the 3 nodes are connected and chat messages are flowing between them.
 
 #### Distributed mode with docker
 
@@ -201,7 +201,7 @@ If you have docker isntalled, you can run flack in cluster mode in a set of dock
 make docker-run-cluster
 ```
 
-You should be able to test flack in a browser by going to http://<hostname>:8080/. The reference client can be run against port 8080 which goes to a random flack node through nginx or using ports, 8081, 8082, or 8083, which reach each of the 3 flack nodes directly.
+You should be able to test flack in a browser by going to `http://<hostname>:8080/`. The reference client can be run against port 8080 which goes to a random flack node through nginx or using ports, 8081, 8082, or 8083, which reach each of the 3 flack nodes directly.
 
 To stop flack do:
 
