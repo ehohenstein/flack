@@ -25,5 +25,24 @@ install:
 	$(CP) client/static/css/flack.css /var/www/css/
 	$(CP) client/static/images/flack.png /var/www/images/
 
-.PHONY: all build test
+containers: build release
+	$(MAKE) -C docker $@
+
+docker-run-single:
+	$(MAKE) -C docker run-single
+
+docker-stop-single:
+	$(MAKE) -C docker stop-single
+
+docker-run-cluster:
+	$(MAKE) -C docker run-cluster
+
+docker-stop-cluster:
+	$(MAKE) -C docker stop-cluster
+
+clean:
+	$(MAKE) -C client/static $@
+	$(MAKE) -C server/flack $@
+
+.PHONY: all build release test install containers docker-run-single docker-stop-single docker-run-cluster docker-stop-cluster clean
 

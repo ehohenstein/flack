@@ -21,3 +21,4 @@ rebar3.crashdump
 rebar.lock
 flack-app.js
 node_modules/
+build/
